@@ -26,9 +26,9 @@ config_setting(
 genrule(
     name = "cue_runtime",
     srcs = select({
-        "//cue:linux_x86_64": ["@cue_runtime_linux_x86_64//:cue"],
-        "//cue:darwin_x86_64": ["@cue_runtime_darwin_x86_64//:cue"],
-        "//cue:windows_x86_64": ["@cue_runtime_windows_x86_64//:cue"],
+        "//cue:linux_x86_64": ["@cue_runtime_linux_amd64//:cue"],
+        "//cue:darwin_x86_64": ["@cue_runtime_darwin_amd64//:cue"],
+        "//cue:windows_x86_64": ["@cue_runtime_windows_amd64//:cue"],
     }),
     outs = ["bin/cue"],
     cmd = "cp $(<) $(@)",
