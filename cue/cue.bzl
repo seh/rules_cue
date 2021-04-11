@@ -175,6 +175,12 @@ def _cue_export(ctx, merged, output):
         if len(v) == 0:
             fail(msg = "injected value must not empty")
         args.add("--inject", v)
+    for p in ctx.attr.path:
+        if not p:
+            fail(msg = "path element must not be empty")
+        args.add("--path", p)
+    if ctx.attr.with_context:
+        args.add("--with-context")
 
     #if ctx.attr.ignore:2
     #    args.add("--ignore")
@@ -308,6 +314,19 @@ _cue_export_attrs = {
     ),
     "inject_shorthand": attr.string_list(
         doc = "Shorthand values of tagged fields."
+    ),
+    "path": attr.string_list(
+        doc = """Elements of CUE path at which to place top-level values.
+Each entry for an element may nominate either a CUE field, ending with
+either ":" for a regular fiield or "::" for a definition, or a CUE
+expression, both variants evaluated within the value, unless
+"with_context" is true.""",
+    ),
+    "with_context": attr.bool(
+        doc = """Evaluate "path" elements within a struct of contextual data.
+Instead of evaluating these elements in the context of the value being
+situated, instead evaluate them within a struct identifying the source
+data, file name, record index, and record count.""",
     ),
 
     #debug            give detailed error info
