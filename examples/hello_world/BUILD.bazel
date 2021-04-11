@@ -2,13 +2,13 @@ load("@com_github_tnarg_rules_cue//cue:cue.bzl", "cue_export")
 
 cue_export(
     name = "hello_world",
-    src = "hello_world.cue",
+    srcs = ["hello_world.cue"],
     visibility = ["//visibility:public"],
 )
 
 cue_export(
     name = "message",
-    src = "hello_world.cue",
+    srcs = ["hello_world.cue"],
     expression = "message",
     output_format = "text",
     visibility = ["//visibility:public"],
@@ -16,14 +16,14 @@ cue_export(
 
 cue_export(
     name = "de",
-    src = "de.cue",
+    srcs = ["de.cue"],
     visibility = ["//visibility:public"],
     deps = ["//examples/lang:cue_de_library"],
 )
 
 cue_export(
     name = "en",
-    src = "en.cue",
+    srcs = ["en.cue"],
     visibility = ["//visibility:public"],
     deps = ["//examples/lang:cue_en_library"],
 )

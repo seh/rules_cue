@@ -41,13 +41,13 @@ cue_register_toolchains()
 cue_export(name, src, deps=[], output_format=<format>", output_name=<src_filename.cue>)
 ```
 
-Exports a single CUE entry-point file. The entry-point file may have
+Exports one or more entry-point files. The entry-point files may have
 dependencies (`cue_library` rules, see below).
 
 | Attribute          | Description                                                             |
 |--------------------|-------------------------------------------------------------------------|
 | `name`             | Unique name for this rule (required).                                   |
-| `src`              | Cue compilation entry-point (required).                                 |
+| `srcs`             | Entry-point files (required).                                           |
 | `deps`             | List of dependencies for the `src`. Each dependency is a `cue_library`. |
 | `escape`           | Use HTML escaping.                                                      |
 | `expression`       | CUE expression selecting a single value to export.                      |

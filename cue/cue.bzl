@@ -7,6 +7,9 @@ CuePkg = provider(
     },
 )
 
+def _path_in_zip_file(f):
+    return f.short_path
+
 def _collect_transitive_pkgs(pkg, deps):
     "CUE evaluation requires all transitive .cue source files"
     return depset(
@@ -96,9 +99,9 @@ def _cue_library_impl(ctx):
     ]
 
 def _zip_src(ctx, srcs):
-    # Generate a zip file containing the src file
+    # Generate a ZIP file containing the files in srcs.
 
-    zipper_list_content = "".join([src.basename + "=" + src.path + "\n" for src in srcs])
+    zipper_list_content = "".join([_path_in_zip_file(src) + "=" + src.path + "\n" for src in srcs])
     zipper_list = ctx.actions.declare_file(ctx.label.name + "~zipper.txt")
     ctx.actions.write(zipper_list, zipper_list_content)
 
@@ -146,7 +149,7 @@ def _pkg_merge(ctx, src_zip):
     return merged
 
 def _cue_export(ctx, merged, output):
-    """_cue_export performs an action to export a single CUE file."""
+    """_cue_export performs an action to export a set of input files."""
 
     # The CUE CLI expects inputs like
     # cue export <flags> <input_filename>
@@ -154,7 +157,6 @@ def _cue_export(ctx, merged, output):
 
     args.add(ctx.executable._cue.path)
     args.add(merged.path)
-    args.add(ctx.file.src.basename)
     args.add(output.path)
 
     if ctx.attr.escape:
@@ -186,7 +188,7 @@ def _cue_export(ctx, merged, output):
     #    args.add("--debug")
 
     args.add("--out=" + ctx.attr.output_format)
-    #args.add(input.path)
+    args.add_all(ctx.files.srcs, map_each = _path_in_zip_file)
 
     ctx.actions.run_shell(
         mnemonic = "CueExport",
@@ -197,11 +199,10 @@ set -euo pipefail
 
 CUE=$1; shift
 PKGZIP=$1; shift
-SRC=$1; shift
 OUT=$1; shift
 
 unzip -q ${PKGZIP}
-${CUE} export -o ${OUT} $@ ${SRC}
+${CUE} export --outfile ${OUT} $@
 """,
         inputs = [merged],
         outputs = [output],
@@ -209,7 +210,7 @@ ${CUE} export -o ${OUT} $@ ${SRC}
     )
 
 def _cue_export_impl(ctx):
-    src_zip = _zip_src(ctx, [ctx.file.src])
+    src_zip = _zip_src(ctx, ctx.files.srcs)
     merged = _pkg_merge(ctx, src_zip)
     _cue_export(ctx, merged, ctx.outputs.export)
     return DefaultInfo(
@@ -266,11 +267,11 @@ def _strip_extension(path):
     components.pop()
     return ".".join(components)
 
-def _cue_export_outputs(src, output_name, output_format):
+def _cue_export_outputs(srcs, output_name, output_format):
     """Get map of cue_export outputs.
     Note that the arguments to this function are named after attributes on the rule.
     Args:
-      src: The rule's `src` attribute
+      srcs: The rule's `srcs` attribute
       output_name: The rule's `output_name` attribute
       output_format: The rule's `output_format` attribute
     Returns:
@@ -282,16 +283,17 @@ def _cue_export_outputs(src, output_name, output_format):
         "yaml": "yaml",
     }
     outputs = {
-        "export": output_name or _strip_extension(src.name) + "." + extension_by_format[output_format],
+        "export": output_name or _strip_extension(srcs[0].name) + "." + extension_by_format[output_format],
     }
 
     return outputs
 
 _cue_export_attrs = {
-    "src": attr.label(
-        doc = "CUE entrypoint file",
+    "srcs": attr.label_list(
+        doc = "Input files.",
         mandatory = True,
-        allow_single_file = [".cue"],
+        allow_empty = False,
+        allow_files = True,
     ),
     "escape": attr.bool(
         doc = "Use HTML escaping.",
@@ -315,11 +317,11 @@ _cue_export_attrs = {
     #verbose          print information about progress
     "output_name": attr.string(
         doc = """Name of the output file, including the extension.
-By default, this is based on the `src` attribute: if `foo.cue` is
-the `src` then the output file is `foo.json.`.
-You can override this to be any other name.
-Note that some tooling may assume that the output name is derived from
-the input name, so use this attribute with caution.""",
+By default, this is based on the first entry in the `srcs` attribute:
+if `foo.cue` is the first value in `srcs` then the output file is
+`foo.json.`.  You can override this to be any other name.  Note that
+some tooling may assume that the output name is derived from the input
+name, so use this attribute with caution.""",
     ),
     "output_format": attr.string(
         doc = "Output format",
