@@ -175,6 +175,10 @@ def _cue_export(ctx, merged, output):
         if len(v) == 0:
             fail(msg = "injected value must not empty")
         args.add("--inject", v)
+    if ctx.attr.list:
+        args.add("--list")
+    if not ctx.attr.merge:
+        args.add("--merge=false")
     for p in ctx.attr.path:
         if not p:
             fail(msg = "path element must not be empty")
@@ -314,6 +318,13 @@ _cue_export_attrs = {
     ),
     "inject_shorthand": attr.string_list(
         doc = "Shorthand values of tagged fields."
+    ),
+    "list": attr.bool(
+        doc = "Concatenate multiple objects into a list.",
+    ),
+    "merge": attr.bool(
+        doc = "Merge non-CUE files.",
+        default = True,
     ),
     "path": attr.string_list(
         doc = """Elements of CUE path at which to place top-level values.

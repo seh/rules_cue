@@ -53,6 +53,8 @@ dependencies (`cue_library` rules, see below).
 | `expression`       | CUE expression selecting a single value to export.                      |
 | `inject`           | Keys and values of tagged fields.                                       |
 | `inject_shorthand` | Shorthand values of tagged fields.                                      |
+| `list`             | Concatenate multiple objects into a list.                               |
+| `merge`            | Merge non-CUE files.                                                    |
 | `path`             | Elements of CUE path at which to place top-level values.                |
 | `with_context`     | Evaluate `path` elements within a struct of contextual data.            |
 | `output_format`    | It should be one of `json`, `text`, or `yaml`.                          |
