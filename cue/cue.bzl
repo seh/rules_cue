@@ -3,12 +3,12 @@ load("@io_bazel_rules_go//go/private:common.bzl", "env_execute", "executable_ext
 CuePkg = provider(
     doc = "Collects files from cue_library for use in downstream cue_export",
     fields = {
-        "transitive_pkgs": "Cue pkg zips for this target and its dependencies",
+        "transitive_pkgs": "CUE pkg zips for this target and its dependencies",
     },
 )
 
 def _collect_transitive_pkgs(pkg, deps):
-    "Cue evaluation requires all transitive .cue source files"
+    "CUE evaluation requires all transitive .cue source files"
     return depset(
         [pkg],
         transitive = [dep[CuePkg].transitive_pkgs for dep in deps],
@@ -17,7 +17,7 @@ def _collect_transitive_pkgs(pkg, deps):
     )
 
 def _cue_def(ctx):
-    "Cue def library"
+    "CUE def library"
     srcs_zip = _zip_src(ctx, ctx.files.srcs)
     merged = _pkg_merge(ctx, srcs_zip)
     def_out = ctx.actions.declare_file(ctx.label.name + "~def.json")
@@ -146,9 +146,9 @@ def _pkg_merge(ctx, src_zip):
     return merged
 
 def _cue_export(ctx, merged, output):
-    """_cue_export performs an action to export a single Cue file."""
+    """_cue_export performs an action to export a single CUE file."""
 
-    # The Cue CLI expects inputs like
+    # The CUE CLI expects inputs like
     # cue export <flags> <input_filename>
     args = ctx.actions.args()
 
@@ -160,7 +160,19 @@ def _cue_export(ctx, merged, output):
     if ctx.attr.escape:
         args.add("--escape")
     if ctx.attr.expression:
-        args.add("--expression=" + ctx.attr.expression)
+        args.add("--expression", ctx.attr.expression)
+    for k, v in ctx.attr.inject.items():
+        if len(k) == 0:
+            fail(msg = "injected key must not empty")
+        args.add(
+            "--inject",
+            # Allow the empty string as a specified value.
+            "{}={}".format(k, v)
+        )
+    for v in ctx.attr.inject_shorthand:
+        if len(v) == 0:
+            fail(msg = "injected value must not empty")
+        args.add("--inject", v)
 
     #if ctx.attr.ignore:2
     #    args.add("--ignore")
@@ -213,14 +225,14 @@ _cue_deps_attr = attr.label_list(
 
 _cue_library_attrs = {
     "srcs": attr.label_list(
-        doc = "Cue source files",
+        doc = "CUE source files",
         allow_files = [".cue"],
         allow_empty = False,
         mandatory = True,
     ),
     "deps": _cue_deps_attr,
     "importpath": attr.string(
-        doc = "Cue import path under pkg/",
+        doc = "CUE import path under pkg/",
         mandatory = True,
     ),
     "_cue": attr.label(
@@ -277,18 +289,25 @@ def _cue_export_outputs(src, output_name, output_format):
 
 _cue_export_attrs = {
     "src": attr.label(
-        doc = "Cue entrypoint file",
+        doc = "CUE entrypoint file",
         mandatory = True,
         allow_single_file = [".cue"],
     ),
     "escape": attr.bool(
-        default = False,
         doc = "Use HTML escaping.",
+        default = False,
     ),
     "expression": attr.string(
         doc = "CUE expression selecting a single value to export.",
         default = "",
     ),
+    "inject": attr.string_dict(
+        doc = "Keys and values of tagged fields.",
+    ),
+    "inject_shorthand": attr.string_list(
+        doc = "Shorthand values of tagged fields."
+    ),
+
     #debug            give detailed error info
     #ignore           proceed in the presence of errors
     #simplify         simplify output
@@ -301,7 +320,6 @@ the `src` then the output file is `foo.json.`.
 You can override this to be any other name.
 Note that some tooling may assume that the output name is derived from
 the input name, so use this attribute with caution.""",
-        default = "",
     ),
     "output_format": attr.string(
         doc = "Output format",

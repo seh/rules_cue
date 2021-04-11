@@ -1,0 +1,5 @@
+b:   bool           @tag(b,type=bool)
+i:   int            @tag(i,type=int)
+n:   number         @tag(n,type=number)
+s:   string         @tag(s)
+env: "dev" | "prod" @tag(env,short=dev|prod)
