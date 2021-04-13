@@ -44,21 +44,21 @@ cue_export(name, src, deps=[], output_format=<format>", output_name=<src_filenam
 Exports one or more entry-point files. The entry-point files may have
 dependencies (`cue_library` rules, see below).
 
-| Attribute          | Description                                                             |
-|--------------------|-------------------------------------------------------------------------|
-| `name`             | Unique name for this rule (required).                                   |
-| `srcs`             | Entry-point files (required).                                           |
-| `deps`             | List of dependencies for the `src`. Each dependency is a `cue_library`. |
-| `escape`           | Use HTML escaping.                                                      |
-| `expression`       | CUE expression selecting a single value to export.                      |
-| `inject`           | Keys and values of tagged fields.                                       |
-| `inject_shorthand` | Shorthand values of tagged fields.                                      |
-| `list`             | Concatenate multiple objects into a list.                               |
-| `merge`            | Merge non-CUE files.                                                    |
-| `path`             | Elements of CUE path at which to place top-level values.                |
-| `with_context`     | Evaluate `path` elements within a struct of contextual data.            |
-| `output_format`    | It should be one of `json`, `text`, or `yaml`.                          |
-| `output_name`      | Output file name, including extension. Defaults to `<src_name>.json`.   |
+| Attribute             | Description                                                             |
+|-----------------------|-------------------------------------------------------------------------|
+| `name`                | Unique name for this rule (required).                                   |
+| `srcs`                | Entry-point files (required).                                           |
+| `deps`                | List of dependencies for the `src`. Each dependency is a `cue_library`. |
+| `concatenate_objects` | Concatenate multiple objects into a list.                               |
+| `escape`              | Use HTML escaping.                                                      |
+| `expression`          | CUE expression selecting a single value to export.                      |
+| `inject`              | Keys and values of tagged fields.                                       |
+| `inject_shorthand`    | Shorthand values of tagged fields.                                      |
+| `merge_other_files`   | Merge non-CUE files.                                                    |
+| `path`                | Elements of CUE path at which to place top-level values.                |
+| `with_context`        | Evaluate `path` elements within a struct of contextual data.            |
+| `output_format`       | It should be one of `json`, `text`, or `yaml`.                          |
+| `output_name`         | Output file name, including extension. Defaults to `<src_name>.json`.   |
 
 ### cue_library
 
