@@ -23,11 +23,16 @@ http_archive(
     sha256 = "dd3f3cd6c1d66cf77e20af60a4c309d34039c2727baeafbad72ddd13aec5414a",
 )
 
-load("@com_github_tnarg_rules_cue//cue:deps.bzl", "cue_register_toolchains")
-load("@com_github_tnarg_rules_cue//go.bzl", cue_go_modules "go_modules")
+load(
+   "@com_github_tnarg_rules_cue//go.bzl",
+   _cue_go_modules = "go_modules",
+)
+load(
+    "@com_github_tnarg_rules_cue//cue:deps.bzl",
+    "cue_register_toolchains",
+)
 
-cue_go_modules()
-
+_cue_go_modules()
 cue_register_toolchains()
 ```
 
@@ -87,11 +92,7 @@ load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle_binary", "gazelle
 
 gazelle_binary(
     name = "gazelle_binary",
-    languages = DEFAULT_LANGUAGES + ["@com_github_tnarg_rules_cue//gazelle/cue:go_default_library"],
-    msan = "off",
-    pure = "off",
-    race = "off",
-    static = "off",
+    languages = DEFAULT_LANGUAGES + ["@com_github_tnarg_rules_cue//gazelle/cue"],
     visibility = ["//visibility:public"],
 )
 
