@@ -2,16 +2,43 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 _cue_runtimes = {
+    "0.3.2": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "b9a3fb15f9c52ce3d83c3696a675463b3cf203f75d94467378bf4987826396cd",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "c80da4c9439e633e293fcebf840d082048cb0a79faa61aa55e6edf13d8e7d4d5",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "a4f900c4640f67b49a55769adc9da1943193ce196181072d1f28e79e6ee48a32",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "3ee17ebb1a2565c16cdd3a66a165b70e8f47d5e86f230455dc629c9d0ce6a8c8",
+        },
+    ],
     "0.3.1": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "c98e3f139418325f7b33e209cd1c41013c77270349225515e328a2918beaefb1",
+        },
         {
             "os": "Linux",
             "arch": "amd64",
             "sha256": "a63533b74708c57e325ccfbefd717876205cb64d67166b6de2a27f5408577825",
         },
         {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "c98e3f139418325f7b33e209cd1c41013c77270349225515e328a2918beaefb1",
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "a1e7f1f7f84a6d3df4532b5197c4d76ced37b2889505f88b8760d92c57a05f02",
         },
         {
             "os": "Windows",
@@ -21,7 +48,7 @@ _cue_runtimes = {
     ],
 }
 
-def cue_register_toolchains(version = "0.3.1"):
+def cue_register_toolchains(version = "0.3.2"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":

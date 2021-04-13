@@ -3,6 +3,13 @@ package(default_visibility = ["//visibility:public"])
 exports_files(glob(["*.bzl"]))
 
 config_setting(
+    name = "darwin_x86_64",
+    values = {
+        "cpu": "darwin",
+    },
+)
+
+config_setting(
     name = "linux_x86_64",
     values = {
         "cpu": "k8",
@@ -10,9 +17,9 @@ config_setting(
 )
 
 config_setting(
-    name = "darwin_x86_64",
+    name = "linux_aarch64",
     values = {
-        "cpu": "darwin",
+        "cpu": "arm64",
     },
 )
 
@@ -26,8 +33,9 @@ config_setting(
 genrule(
     name = "cue_runtime",
     srcs = select({
-        "//cue:linux_x86_64": ["@cue_runtime_linux_amd64//:cue"],
         "//cue:darwin_x86_64": ["@cue_runtime_darwin_amd64//:cue"],
+        "//cue:linux_aarch64": ["@cue_runtime_linux_arm64//:cue"],
+        "//cue:linux_x86_64": ["@cue_runtime_linux_amd64//:cue"],
         "//cue:windows_x86_64": ["@cue_runtime_windows_amd64//:cue"],
     }),
     outs = ["bin/cue"],
