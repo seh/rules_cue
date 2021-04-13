@@ -33,7 +33,7 @@ import (
 func (cl *cueLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	cueFiles := make(map[string]*ast.File)
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
-		// Only generate Cue entries for cue files (.cue)
+		// Only generate CUE entries for CUE files (with file extension ".cue")
 		if !strings.HasSuffix(f, ".cue") {
 			continue
 		}
@@ -41,7 +41,7 @@ func (cl *cueLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 		pth := filepath.Join(args.Dir, f)
 		cueFile, err := parser.ParseFile(pth, nil)
 		if err != nil {
-			log.Printf("parsing cue file: path=%q, err=%+v", pth, err)
+			log.Printf("parsing CUE file: path=%q, err=%+v", pth, err)
 			continue
 		}
 		cueFiles[f] = cueFile
@@ -50,8 +50,8 @@ func (cl *cueLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 	implicitPkgName := path.Base(args.Rel)
 	baseImportPath := computeImportPath(args)
 
-	// categorize cue files into export and library sources
-	// cue_libary names are based on cue package name.
+	// Categorize CUE files into export and library sources.
+	// cue_libary names are based on CUE package name.
 	libraries := make(map[string]*cueLibrary)
 	exports := make(map[string]*cueExport)
 
@@ -61,7 +61,7 @@ func (cl *cueLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 			tgt := exportName(fname)
 			export := &cueExport{
 				Name:    tgt,
-				Src:     fname,
+				Srcs:    []string{fname},
 				Imports: make(map[string]bool),
 			}
 			for _, imprt := range cueFile.Imports {
@@ -174,8 +174,8 @@ func (cl *cueLibrary) ToRule() *rule.Rule {
 	rule.SetAttr("srcs", cl.Srcs)
 	rule.SetAttr("visibility", []string{"//visibility:public"})
 	rule.SetAttr("importpath", cl.ImportPath)
-	var imprts []string
-	for imprt, _ := range cl.Imports {
+	imprts := make([]string, 0, len(cl.Imports))
+	for imprt := range cl.Imports {
 		imprts = append(imprts, imprt)
 	}
 	sort.Strings(imprts)
@@ -185,16 +185,16 @@ func (cl *cueLibrary) ToRule() *rule.Rule {
 
 type cueExport struct {
 	Name    string
-	Src     string
+	Srcs    []string
 	Imports map[string]bool
 }
 
 func (ce *cueExport) ToRule() *rule.Rule {
 	rule := rule.NewRule("cue_export", ce.Name)
-	rule.SetAttr("src", ce.Src)
+	rule.SetAttr("srcs", ce.Srcs)
 	rule.SetAttr("visibility", []string{"//visibility:public"})
-	var imprts []string
-	for imprt, _ := range ce.Imports {
+	imprts := make([]string, 0, len(ce.Imports))
+	for imprt := range ce.Imports {
 		imprts = append(imprts, imprt)
 	}
 	sort.Strings(imprts)

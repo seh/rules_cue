@@ -83,7 +83,7 @@ any outputs.
 
 ## Gazelle Extension
 
-To use [Gazelle][gazelle] in your project to generate BUILD.bazel files for your .cue files, add gazelle to your WORKSPACE, and then add the following to your repository root BUILD.bazel:
+To use [Gazelle][gazelle] in your project to generate BUILD.bazel files for your CUE files, add Gazelle to your WORKSPACE, and then add the following to your repository root BUILD.bazel:
 
 [gazelle]: https://github.com/bazelbuild/bazel-gazelle
 
@@ -102,3 +102,5 @@ gazelle(
     gazelle = "//:gazelle_binary",
 )
 ```
+
+Note that Gazelle will generate a separate `cue_export` target for each CUE file it finds with a ".cue" extension, even though it's possible to supply multiple input files—in CUE format or in other formats—to a `cue_export` target. Gazelle won't try to guess any further than this simple one-to-one mapping how those files should map to targets.

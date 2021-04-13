@@ -101,6 +101,6 @@ func (cl *cueLang) Loads() []rule.LoadInfo {
 // Fix repairs deprecated usage of language-specific rules in f. This
 // is called before the file is indexed. Unless c.ShouldFix is true,
 // fixes that delete or rename rules should not be performed.
-func (s *cueLang) Fix(c *config.Config, f *rule.File) {
+func (cl *cueLang) Fix(c *config.Config, f *rule.File) {
 	// Currently a noop
 }
