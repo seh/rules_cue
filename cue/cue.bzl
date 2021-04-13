@@ -433,9 +433,9 @@ def _cue_repository_impl(ctx):
             "fix",
             "-repo_root",
             ctx.path(""),
-            "-repo_config",
-            ctx.path(ctx.attr.build_config),
         ]
+        if ctx.attr.build_config:
+            cmd.extend(["-repo_config"], ctx.path(ctx.attr.build_config))
         if ctx.attr.build_file_name:
             cmd.extend(["-build_file_name", ctx.attr.build_file_name])
         cmd.extend(ctx.attr.build_extra_args)
@@ -497,7 +497,7 @@ cue_repository = repository_rule(
             ],
         ),
         "build_extra_args": attr.string_list(),
-        "build_config": attr.label(default = "@bazel_gazelle_go_repository_config//:WORKSPACE"),
+        "build_config": attr.label(),
         "build_directives": attr.string_list(default = []),
 
         # Patches to apply after running gazelle.
