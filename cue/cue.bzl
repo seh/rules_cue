@@ -29,6 +29,7 @@ def _cue_def(ctx):
     args.add(ctx.executable._cue.path)
     args.add(merged.path)
     args.add(def_out.path)
+    args.add_all(ctx.files.srcs, map_each = _path_in_zip_file)
 
     ctx.actions.run_shell(
         mnemonic = "CueDef",
@@ -41,8 +42,8 @@ CUE=$1; shift
 PKGZIP=$1; shift
 OUT=$1; shift
 
-unzip -q ${PKGZIP}
-${CUE} def -o ${OUT}
+unzip -q "${PKGZIP}"
+${CUE} def --outfile "${OUT}" "${@}"
 """,
         inputs = [merged],
         outputs = [def_out],
@@ -154,7 +155,6 @@ def _cue_export(ctx, merged, output):
     # The CUE CLI expects inputs like
     # cue export <flags> <input_filename>
     args = ctx.actions.args()
-
     args.add(ctx.executable._cue.path)
     args.add(merged.path)
     args.add(output.path)
@@ -211,8 +211,9 @@ CUE=$1; shift
 PKGZIP=$1; shift
 OUT=$1; shift
 
-unzip -q ${PKGZIP}
-${CUE} export --outfile ${OUT} $@
+unzip -q "${PKGZIP}"
+find .
+${CUE} export --outfile "${OUT}" "${@}"
 """,
         inputs = [merged],
         outputs = [output],
