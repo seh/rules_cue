@@ -24,16 +24,13 @@ http_archive(
 )
 
 load(
-   "@com_github_tnarg_rules_cue//go.bzl",
-   _cue_go_modules = "go_modules",
-)
-load(
     "@com_github_tnarg_rules_cue//cue:deps.bzl",
     "cue_register_toolchains",
+    "cue_rules_dependencies",
 )
 
-_cue_go_modules()
 cue_register_toolchains()
+cue_rules_dependencies()
 ```
 
 
