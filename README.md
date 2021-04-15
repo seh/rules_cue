@@ -71,12 +71,19 @@ cue_library(name, srcs, importpath, deps=[])
 Defines a collection of Cue files that can be depended on by a `cue_export`. Does not generate
 any outputs.
 
-| Attribute    | Description                                                                                       |
-|--------------|---------------------------------------------------------------------------------------------------|
-| `name`       | Unique name for this rule (required)                                                              |
-| `srcs`       | CUE files included in this library. Package name MUST match the directory name.                   |
-| `importpath` | The source import path of this library. Other .cue files can import this library using this path. |
-| `deps`       | Dependencies for the `srcs`. Each dependency is a `cue_library`                                   |
+| Attribute             | Description                                                                                        |
+|-----------------------|----------------------------------------------------------------------------------------------------|
+| `name`                | Unique name for this rule (required).                                                              |
+| `srcs`                | Entry-point files included in this library (required). Package name MUST match the directory name. |
+| `importpath`          | The source import path of this library. Other .cue files can import this library using this path.  |
+| `deps`                | Dependencies for the `srcs`. Each dependency is a `cue_library`.                                   |
+| `concatenate_objects` | Concatenate multiple objects into a list.                                                          |
+| `expression`          | CUE expression selecting a single value to export.                                                 |
+| `inject`              | Keys and values of tagged fields.                                                                  |
+| `inject_shorthand`    | Shorthand values of tagged fields.                                                                 |
+| `merge_other_files`   | Merge non-CUE files.                                                                               |
+| `path`                | Elements of CUE path at which to place top-level values.                                           |
+| `with_context`        | Evaluate `path` elements within a struct of contextual data.                                       |
 
 ## Gazelle Extension
 

@@ -19,17 +19,93 @@ def _collect_transitive_pkgs(pkg, deps):
         order = "postorder",
     )
 
+def _add_common_attrs_to(attrs):
+    attrs.update({
+        "srcs": attr.label_list(
+            doc = "Input files.",
+            mandatory = True,
+            allow_empty = False,
+            allow_files = True,
+        ),
+        "deps": attr.label_list(
+            doc = "cue_library targets to include in the evaluation",
+            providers = [CuePkg],
+            allow_files = False,
+        ),
+        "expression": attr.string(
+            doc = "CUE expression selecting a single value to export.",
+            default = "",
+        ),
+        "inject": attr.string_dict(
+            doc = "Keys and values of tagged fields.",
+        ),
+        "inject_shorthand": attr.string_list(
+            doc = "Shorthand values of tagged fields.",
+        ),
+        "concatenate_objects": attr.bool(
+            doc = "Concatenate multiple objects into a list.",
+        ),
+        "merge_other_files": attr.bool(
+            doc = "Merge non-CUE files.",
+            default = True,
+        ),
+        "path": attr.string_list(
+            doc = """Elements of CUE path at which to place top-level values.
+Each entry for an element may nominate either a CUE field, ending with
+either ":" for a regular fiield or "::" for a definition, or a CUE
+expression, both variants evaluated within the value, unless
+"with_context" is true.""",
+        ),
+        "with_context": attr.bool(
+            doc = """Evaluate "path" elements within a struct of contextual data.
+Instead of evaluating these elements in the context of the value being
+situated, instead evaluate them within a struct identifying the source
+data, file name, record index, and record count.""",
+        ),
+    })
+    return attrs
+
+def _add_common_args(ctx, args):
+    # TODO(seh): Consider these:
+    #if ctx.attr.simplify:
+    #    args.add("--simplify")
+    if ctx.attr.expression:
+        args.add("--expression", ctx.attr.expression)
+    for k, v in ctx.attr.inject.items():
+        if len(k) == 0:
+            fail(msg = "injected key must not empty")
+        args.add(
+            "--inject",
+            # Allow the empty string as a specified value.
+            "{}={}".format(k, v),
+        )
+    for v in ctx.attr.inject_shorthand:
+        if len(v) == 0:
+            fail(msg = "injected value must not empty")
+        args.add("--inject", v)
+    if ctx.attr.concatenate_objects:
+        args.add("--list")
+    if not ctx.attr.merge_other_files:
+        args.add("--merge=false")
+    for p in ctx.attr.path:
+        if not p:
+            fail(msg = "path element must not be empty")
+        args.add("--path", p)
+    if ctx.attr.with_context:
+        args.add("--with-context")
+    args.add_all(ctx.files.srcs, map_each = _path_in_zip_file)
+
 def _cue_def(ctx):
     "CUE def library"
     srcs_zip = _zip_src(ctx, ctx.files.srcs)
     merged = _pkg_merge(ctx, srcs_zip)
-    def_out = ctx.actions.declare_file(ctx.label.name + "~def.json")
+    def_out = ctx.actions.declare_file(ctx.label.name + "~def.cue")
 
     args = ctx.actions.args()
     args.add(ctx.executable._cue.path)
     args.add(merged.path)
     args.add(def_out.path)
-    args.add_all(ctx.files.srcs, map_each = _path_in_zip_file)
+    _add_common_args(ctx, args)
 
     ctx.actions.run_shell(
         mnemonic = "CueDef",
@@ -53,8 +129,8 @@ ${CUE} def --outfile "${OUT}" "${@}"
     return def_out
 
 def _cue_library_impl(ctx):
-    """cue_library validates a cue package, bundles up the files into a
-    zip, and collects all transitive dep zips.
+    """cue_library validates a CUE package, bundles up the files into a
+    ZIP file, and collects all transitive dependencies' ZIP file.
     Args:
       ctx: The Bazel build context
     Returns:
@@ -161,44 +237,8 @@ def _cue_export(ctx, merged, output):
 
     if ctx.attr.escape:
         args.add("--escape")
-    if ctx.attr.expression:
-        args.add("--expression", ctx.attr.expression)
-    for k, v in ctx.attr.inject.items():
-        if len(k) == 0:
-            fail(msg = "injected key must not empty")
-        args.add(
-            "--inject",
-            # Allow the empty string as a specified value.
-            "{}={}".format(k, v)
-        )
-    for v in ctx.attr.inject_shorthand:
-        if len(v) == 0:
-            fail(msg = "injected value must not empty")
-        args.add("--inject", v)
-    if ctx.attr.concatenate_objects:
-        args.add("--list")
-    if not ctx.attr.merge_other_files:
-        args.add("--merge=false")
-    for p in ctx.attr.path:
-        if not p:
-            fail(msg = "path element must not be empty")
-        args.add("--path", p)
-    if ctx.attr.with_context:
-        args.add("--with-context")
-
-    #if ctx.attr.ignore:2
-    #    args.add("--ignore")
-    #if ctx.attr.simplify:
-    #    args.add("--simplify")
-    #if ctx.attr.trace:
-    #    args.add("--trace")
-    #if ctx.attr.verbose:
-    #    args.add("--verbose")
-    #if ctx.attr.debug:
-    #    args.add("--debug")
-
     args.add("--out=" + ctx.attr.output_format)
-    args.add_all(ctx.files.srcs, map_each = _path_in_zip_file)
+    _add_common_args(ctx, args)
 
     ctx.actions.run_shell(
         mnemonic = "CueExport",
@@ -212,7 +252,6 @@ PKGZIP=$1; shift
 OUT=$1; shift
 
 unzip -q "${PKGZIP}"
-find .
 ${CUE} export --outfile "${OUT}" "${@}"
 """,
         inputs = [merged],
@@ -229,20 +268,7 @@ def _cue_export_impl(ctx):
         runfiles = ctx.runfiles(files = [ctx.outputs.export]),
     )
 
-_cue_deps_attr = attr.label_list(
-    doc = "cue_library targets to include in the evaluation",
-    providers = [CuePkg],
-    allow_files = False,
-)
-
-_cue_library_attrs = {
-    "srcs": attr.label_list(
-        doc = "CUE source files",
-        allow_files = [".cue"],
-        allow_empty = False,
-        mandatory = True,
-    ),
-    "deps": _cue_deps_attr,
+_cue_library_attrs = _add_common_attrs_to({
     "importpath": attr.string(
         doc = "CUE import path under pkg/",
         mandatory = True,
@@ -265,7 +291,7 @@ _cue_library_attrs = {
         allow_single_file = True,
         cfg = "host",
     ),
-}
+})
 
 cue_library = rule(
     implementation = _cue_library_impl,
@@ -299,46 +325,10 @@ def _cue_export_outputs(srcs, output_name, output_format):
 
     return outputs
 
-_cue_export_attrs = {
-    "srcs": attr.label_list(
-        doc = "Input files.",
-        mandatory = True,
-        allow_empty = False,
-        allow_files = True,
-    ),
+_cue_export_attrs = _add_common_attrs_to({
     "escape": attr.bool(
         doc = "Use HTML escaping.",
         default = False,
-    ),
-    "expression": attr.string(
-        doc = "CUE expression selecting a single value to export.",
-        default = "",
-    ),
-    "inject": attr.string_dict(
-        doc = "Keys and values of tagged fields.",
-    ),
-    "inject_shorthand": attr.string_list(
-        doc = "Shorthand values of tagged fields."
-    ),
-    "concatenate_objects": attr.bool(
-        doc = "Concatenate multiple objects into a list.",
-    ),
-    "merge_other_files": attr.bool(
-        doc = "Merge non-CUE files.",
-        default = True,
-    ),
-    "path": attr.string_list(
-        doc = """Elements of CUE path at which to place top-level values.
-Each entry for an element may nominate either a CUE field, ending with
-either ":" for a regular fiield or "::" for a definition, or a CUE
-expression, both variants evaluated within the value, unless
-"with_context" is true.""",
-    ),
-    "with_context": attr.bool(
-        doc = """Evaluate "path" elements within a struct of contextual data.
-Instead of evaluating these elements in the context of the value being
-situated, instead evaluate them within a struct identifying the source
-data, file name, record index, and record count.""",
     ),
 
     #debug            give detailed error info
@@ -363,7 +353,6 @@ name, so use this attribute with caution.""",
             "yaml",
         ],
     ),
-    "deps": _cue_deps_attr,
     "_cue": attr.label(
         default = Label("//cue:cue_runtime"),
         executable = True,
@@ -382,7 +371,7 @@ name, so use this attribute with caution.""",
         allow_single_file = True,
         cfg = "host",
     ),
-}
+})
 
 cue_export = rule(
     implementation = _cue_export_impl,
