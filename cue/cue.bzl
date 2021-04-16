@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go/private:common.bzl", "env_execute", "executable_extension")
+load("@io_bazel_rules_go//go/private:common.bzl", "env_execute")
 
 CuePkg = provider(
     doc = "Collects files from cue_library for use in downstream cue_export",
