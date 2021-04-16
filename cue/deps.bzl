@@ -2,6 +2,28 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 _cue_runtimes = {
+    "0.4.0-alpha.1": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "06d25f8f53ee6f9214a5fbb200f1d24c478dd4c2c0634dac3372b7d61baa67f4",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "9903f10fa1e9dfc3c32918a5734cca35bc78135778fef00384210bfe1cbbc00a",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "0cd98cb2017cc7fae61fd6a80c39a957191f299d930a424f08f21ee02478ab35",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "b9773d3dcd5929e759279942a6a90642e44fe030803ba687434844712e8d7e10",
+        },
+    ],
     "0.3.2": [
         {
             "os": "Darwin",
@@ -24,31 +46,9 @@ _cue_runtimes = {
             "sha256": "3ee17ebb1a2565c16cdd3a66a165b70e8f47d5e86f230455dc629c9d0ce6a8c8",
         },
     ],
-    "0.3.1": [
-        {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "c98e3f139418325f7b33e209cd1c41013c77270349225515e328a2918beaefb1",
-        },
-        {
-            "os": "Linux",
-            "arch": "amd64",
-            "sha256": "a63533b74708c57e325ccfbefd717876205cb64d67166b6de2a27f5408577825",
-        },
-        {
-            "os": "Linux",
-            "arch": "arm64",
-            "sha256": "a1e7f1f7f84a6d3df4532b5197c4d76ced37b2889505f88b8760d92c57a05f02",
-        },
-        {
-            "os": "Windows",
-            "arch": "amd64",
-            "sha256": "23e7e57021a921cc5fb1d9a23dea4d430766e23e628e6ba7099f0f5ed39dc82f",
-        },
-    ],
 }
 
-def cue_register_toolchains(version = "0.3.2"):
+def cue_register_toolchains(version = "0.4.0-alpha.1"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":

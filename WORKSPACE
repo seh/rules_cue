@@ -42,7 +42,7 @@ load(
     "cue_rules_dependencies",
 )
 
-cue_register_toolchains(version="0.3.2")
+cue_register_toolchains()
 
 # gazelle:repository_macro cue/deps.bzl%cue_rules_dependencies
 cue_rules_dependencies()
