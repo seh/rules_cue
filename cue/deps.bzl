@@ -2,6 +2,28 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 _cue_runtimes = {
+    "0.4.0-alpha.2": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "f92186a816e4f285d2908856c653d1288befd8cd98f7d7466c02ef1a31d64de4",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "45ee3566098abe53e4c5d5d6a5d92d4f9ecc3768d5bdff3dff88474d0bf85e6d",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "3882aa887bc928081f35559312d344e4cb4dc282b9c751990df92aa33fdc1a9a",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "4ed38cba4a40c7a0f60f3b66c601bb812855b8dd597b74421271cecdeeeba7c4",
+        },
+    ],
     "0.4.0-alpha.1": [
         {
             "os": "Darwin",
@@ -48,7 +70,7 @@ _cue_runtimes = {
     ],
 }
 
-def cue_register_toolchains(version = "0.4.0-alpha.1"):
+def cue_register_toolchains(version = "0.4.0-alpha.2"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":
