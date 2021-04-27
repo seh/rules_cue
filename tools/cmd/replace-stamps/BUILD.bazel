@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "replace_stamps_lib",
+    srcs = ["replace.go"],
+    importpath = "github.com/tnarg/rules_cue/tools/cmd/replace-stamps",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "replace-stamps",
+    embed = [":replace_stamps_lib"],
+    visibility = ["//:__subpackages__"],
+)

@@ -84,13 +84,6 @@ def cue_register_toolchains(version = "0.4.0-alpha.2"):
 
 def cue_rules_dependencies():
     go_repository(
-        name = "io_rsc_zipmerge",
-        importpath = "rsc.io/zipmerge",
-        sum = "h1:SQ3COGthAQ0mTF+xfVFKwmYag+U/QmnUVhNs4YEP8hQ=",
-        version = "v0.0.0-20160407035457-24e6c1052c64",
-    )
-
-    go_repository(
         name = "co_honnef_go_tools",
         importpath = "honnef.co/go/tools",
         sum = "h1:XJP7lxbSxWLOMNdBE4B/STaqVy6L73o0knwj2vIlxnw=",
@@ -703,6 +696,12 @@ def cue_rules_dependencies():
         importpath = "go.etcd.io/bbolt",
         sum = "h1:Z/90sZLPOeCy2PwprqkFa25PdkusRzaj9P8zm/KNyvk=",
         version = "v1.3.2",
+    )
+    go_repository(
+        name = "io_rsc_zipmerge",
+        importpath = "rsc.io/zipmerge",
+        sum = "h1:SQ3COGthAQ0mTF+xfVFKwmYag+U/QmnUVhNs4YEP8hQ=",
+        version = "v0.0.0-20160407035457-24e6c1052c64",
     )
 
     go_repository(
