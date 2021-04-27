@@ -19,8 +19,23 @@ def _collect_transitive_pkgs(pkg, deps):
         order = "postorder",
     )
 
+def _replacer_if_stamping(stamp):
+    return Label("//tools/cmd/replace-stamps") if stamp else None
+
 def _add_common_attrs_to(attrs):
     attrs.update({
+        "_cue": attr.label(
+            default = Label("//cue:cue_runtime"),
+            executable = True,
+            allow_single_file = True,
+            cfg = "exec",
+        ),
+        "_replacer": attr.label(
+            default = _replacer_if_stamping,
+            executable = True,
+            allow_single_file = True,
+            cfg = "exec",
+        ),
         "srcs": attr.label_list(
             doc = "Input files.",
             mandatory = True,
@@ -56,6 +71,10 @@ either ":" for a regular fiield or "::" for a definition, or a CUE
 expression, both variants evaluated within the value, unless
 "with_context" is true.""",
         ),
+        # TODO(seh): Consider revising this to refer to a label.
+        "stamp": attr.bool(
+            doc = "Whether to stamp tagged field values before injection.",
+        ),
         "with_context": attr.bool(
             doc = """Evaluate "path" elements within a struct of contextual data.
 Instead of evaluating these elements in the context of the value being
@@ -65,7 +84,9 @@ data, file name, record index, and record count.""",
     })
     return attrs
 
-def _add_common_args(ctx, args):
+def _add_common_args(ctx, args, stamped_args_file):
+    required_stamp_bindings = {}
+
     # TODO(seh): Consider these:
     #if ctx.attr.simplify:
     #    args.add("--simplify")
@@ -74,6 +95,9 @@ def _add_common_args(ctx, args):
     for k, v in ctx.attr.inject.items():
         if len(k) == 0:
             fail(msg = "injected key must not empty")
+        if ctx.attr.stamp and v[0] == "{" and v[-1] == "}":
+            required_stamp_bindings[k] = v[1:-1]
+            continue
         args.add(
             "--inject",
             # Allow the empty string as a specified value.
@@ -95,6 +119,46 @@ def _add_common_args(ctx, args):
         args.add("--with-context")
     args.add_all(ctx.files.srcs, map_each = _path_in_zip_file)
 
+    if len(required_stamp_bindings) == 0:
+        # Create an empty file, in order to unify the command that
+        # consumes extra arguments when stamping is in effect.
+        ctx.actions.write(
+            stamped_args_file,
+            "",
+        )
+    else:
+        stamp_placeholders_file = ctx.actions.declare_file("%s-stamp-bindings" % ctx.label.name)
+        ctx.actions.write(
+            stamp_placeholders_file,
+            "\n".join([k + "=" + v for k, v in required_stamp_bindings.items()]),
+        )
+        ctx.actions.run_shell(
+            mnemonic = "CueReplaceStampBindings",
+            tools = [ctx.executable._replacer],
+            arguments = [
+                ctx.executable._replacer.path,
+                stamped_args_file.path,
+                stamp_placeholders_file.path,
+                ctx.info_file.path,  # stable-status.txt
+                ctx.version_file.path,  # volatile-status.txt
+            ],
+            command = """\
+set -euo pipefail
+
+REPLACER=$1; shift
+OUTPUT=$1; shift
+PLACEHOLDERS=$1; shift
+
+"${REPLACER}" "${PLACEHOLDERS}" "${@}" > "${OUTPUT}"
+""",
+            inputs = [
+                stamp_placeholders_file,
+                ctx.info_file,
+                ctx.version_file,
+            ],
+            outputs = [stamped_args_file],
+        )
+
 def _cue_def(ctx):
     "CUE def library"
     srcs_zip = _zip_src(ctx, ctx.files.srcs)
@@ -104,24 +168,30 @@ def _cue_def(ctx):
     args = ctx.actions.args()
     args.add(ctx.executable._cue.path)
     args.add(merged.path)
+    stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
+    args.add(stamped_args_file.path)
     args.add(def_out.path)
-    _add_common_args(ctx, args)
+    _add_common_args(ctx, args, stamped_args_file)
 
     ctx.actions.run_shell(
         mnemonic = "CueDef",
         tools = [ctx.executable._cue],
         arguments = [args],
-        command = """
+        command = """\
 set -euo pipefail
 
 CUE=$1; shift
 PKGZIP=$1; shift
+EXTRA_ARGS=$1; shift
 OUT=$1; shift
 
 unzip -q "${PKGZIP}"
-${CUE} def --outfile "${OUT}" "${@}"
+"${CUE}" def --outfile "${OUT}" $(< "${EXTRA_ARGS}") "${@}"
 """,
-        inputs = [merged],
+        inputs = [
+            merged,
+            stamped_args_file,
+        ],
         outputs = [def_out],
         use_default_shell_env = True,
     )
@@ -233,12 +303,14 @@ def _cue_export(ctx, merged, output):
     args = ctx.actions.args()
     args.add(ctx.executable._cue.path)
     args.add(merged.path)
+    stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
+    args.add(stamped_args_file.path)
     args.add(output.path)
 
     if ctx.attr.escape:
         args.add("--escape")
     args.add("--out=" + ctx.attr.output_format)
-    _add_common_args(ctx, args)
+    _add_common_args(ctx, args, stamped_args_file)
 
     ctx.actions.run_shell(
         mnemonic = "CueExport",
@@ -249,12 +321,16 @@ set -euo pipefail
 
 CUE=$1; shift
 PKGZIP=$1; shift
+EXTRA_ARGS=$1; shift
 OUT=$1; shift
 
 unzip -q "${PKGZIP}"
-${CUE} export --outfile "${OUT}" "${@}"
+${CUE} export --outfile "${OUT}" $(< "${EXTRA_ARGS}") "${@}"
 """,
-        inputs = [merged],
+        inputs = [
+            merged,
+            stamped_args_file,
+        ],
         outputs = [output],
         use_default_shell_env = True,
     )
@@ -273,23 +349,17 @@ _cue_library_attrs = _add_common_attrs_to({
         doc = "CUE import path under pkg/",
         mandatory = True,
     ),
-    "_cue": attr.label(
-        default = Label("//cue:cue_runtime"),
-        executable = True,
-        allow_single_file = True,
-        cfg = "host",
-    ),
     "_zipper": attr.label(
         default = Label("@bazel_tools//tools/zip:zipper"),
         executable = True,
         allow_single_file = True,
-        cfg = "host",
+        cfg = "exec",
     ),
     "_zipmerge": attr.label(
         default = Label("@io_rsc_zipmerge//:zipmerge"),
         executable = True,
         allow_single_file = True,
-        cfg = "host",
+        cfg = "exec",
     ),
 })
 
@@ -352,12 +422,6 @@ name, so use this attribute with caution.""",
             "text",
             "yaml",
         ],
-    ),
-    "_cue": attr.label(
-        default = Label("//cue:cue_runtime"),
-        executable = True,
-        allow_single_file = True,
-        cfg = "host",
     ),
     "_zipper": attr.label(
         default = Label("@bazel_tools//tools/zip:zipper"),
