@@ -1,4 +1,13 @@
-load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+load(
+    "@bazel_gazelle//:def.bzl",
+    "DEFAULT_LANGUAGES",
+    "gazelle",
+    "gazelle_binary",
+)
+load(
+    "//cue/private:config.bzl",
+    "cue_config",
+)
 
 exports_files(
     ["go.bzl"],
@@ -15,4 +24,13 @@ gazelle_binary(
 gazelle(
     name = "gazelle",
     gazelle = "//:gazelle_binary",
+)
+
+cue_config(
+    name = "cue_config",
+    stamp = select({
+        "//cue/private:stamp": True,
+        "//conditions:default": False,
+    }),
+    visibility = ["//visibility:public"],
 )

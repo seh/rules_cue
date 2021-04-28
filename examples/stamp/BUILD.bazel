@@ -9,5 +9,5 @@ cue_export(
         "message": "Goodbye.",
     },
     visibility = ["//visibility:public"],
-    stamp = True,
+    stamping_policy = "Force",
 )

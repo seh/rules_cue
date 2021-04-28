@@ -1,0 +1,6 @@
+config_setting(
+    name = "stamp",
+    values = {
+        "stamp": "true",
+    },
+)

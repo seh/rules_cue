@@ -1,6 +1,13 @@
-load("@io_bazel_rules_go//go/private:common.bzl", "env_execute")
+load(
+    "@io_bazel_rules_go//go/private:common.bzl",
+    "env_execute",
+)
+load(
+    "//cue/private:config.bzl",
+    "CUEConfigInfo",
+)
 
-CuePkg = provider(
+CUEPkgInfo = provider(
     doc = "Collects files from cue_library for use in downstream cue_export",
     fields = {
         "transitive_pkgs": "CUE pkg zips for this target and its dependencies",
@@ -14,21 +21,25 @@ def _collect_transitive_pkgs(pkg, deps):
     "CUE evaluation requires all transitive .cue source files"
     return depset(
         [pkg],
-        transitive = [dep[CuePkg].transitive_pkgs for dep in deps],
+        transitive = [dep[CUEPkgInfo].transitive_pkgs for dep in deps],
         # Provide .cue sources from dependencies first
         order = "postorder",
     )
 
-def _replacer_if_stamping(stamp):
-    return Label("//tools/cmd/replace-stamps") if stamp else None
+def _replacer_if_stamping(stamping_policy):
+    # NB: We can't access the "_cue_config" attribute here.
+    return Label("//tools/cmd/replace-stamps") if stamping_policy != "Never" else None
 
 def _add_common_attrs_to(attrs):
     attrs.update({
         "_cue": attr.label(
-            default = Label("//cue:cue_runtime"),
+            default = "//cue:cue_runtime",
             executable = True,
             allow_single_file = True,
             cfg = "exec",
+        ),
+        "_cue_config": attr.label(
+            default = "//:cue_config",
         ),
         "_replacer": attr.label(
             default = _replacer_if_stamping,
@@ -44,7 +55,7 @@ def _add_common_attrs_to(attrs):
         ),
         "deps": attr.label_list(
             doc = "cue_library targets to include in the evaluation",
-            providers = [CuePkg],
+            providers = [CUEPkgInfo],
             allow_files = False,
         ),
         "expression": attr.string(
@@ -71,9 +82,23 @@ either ":" for a regular fiield or "::" for a definition, or a CUE
 expression, both variants evaluated within the value, unless
 "with_context" is true.""",
         ),
-        # TODO(seh): Consider revising this to refer to a label.
-        "stamp": attr.bool(
-            doc = "Whether to stamp tagged field values before injection.",
+        "stamping_policy": attr.string(
+            doc = """Whether to stamp tagged field values before injection.
+
+If "Allow," stamp tagged field values only when the "--stamp" flag is
+active.
+
+If "Force," stamp tagged field values unconditionally, even if the
+"--stamp" flag is inactive.
+
+If "Prevent," never stamp tagged field values, even if the "--stamp"
+flag is active.""",
+            values = [
+                "Allow",
+                "Force",
+                "Prevent",
+            ],
+            default = "Allow",
         ),
         "with_context": attr.bool(
             doc = """Evaluate "path" elements within a struct of contextual data.
@@ -85,6 +110,8 @@ data, file name, record index, and record count.""",
     return attrs
 
 def _add_common_args(ctx, args, stamped_args_file):
+    cue_config = ctx.attr._cue_config[CUEConfigInfo]
+    stamping_enabled = ctx.attr.stamping_policy == "Force" or ctx.attr.stamping_policy == "Allow" and cue_config.stamp
     required_stamp_bindings = {}
 
     # TODO(seh): Consider these:
@@ -95,7 +122,7 @@ def _add_common_args(ctx, args, stamped_args_file):
     for k, v in ctx.attr.inject.items():
         if len(k) == 0:
             fail(msg = "injected key must not empty")
-        if ctx.attr.stamp and v[0] == "{" and v[-1] == "}":
+        if stamping_enabled and v.startswith("{") and v.endswith("}"):
             required_stamp_bindings[k] = v[1:-1]
             continue
         args.add(
@@ -132,31 +159,23 @@ def _add_common_args(ctx, args, stamped_args_file):
             stamp_placeholders_file,
             "\n".join([k + "=" + v for k, v in required_stamp_bindings.items()]),
         )
-        ctx.actions.run_shell(
-            mnemonic = "CueReplaceStampBindings",
-            tools = [ctx.executable._replacer],
-            arguments = [
-                ctx.executable._replacer.path,
-                stamped_args_file.path,
-                stamp_placeholders_file.path,
-                ctx.info_file.path,  # stable-status.txt
-                ctx.version_file.path,  # volatile-status.txt
-            ],
-            command = """\
-set -euo pipefail
-
-REPLACER=$1; shift
-OUTPUT=$1; shift
-PLACEHOLDERS=$1; shift
-
-"${REPLACER}" "${PLACEHOLDERS}" "${@}" > "${OUTPUT}"
-""",
+        args = ctx.actions.args()
+        args.add("-prefix", "--inject ")
+        args.add("-output", stamped_args_file.path)
+        args.add(stamp_placeholders_file.path)
+        args.add(ctx.info_file.path)  # stable-status.txt
+        args.add(ctx.version_file.path)  # volatile-status.txt
+        ctx.actions.run(
+            executable = ctx.executable._replacer,
+            arguments = [args],
             inputs = [
                 stamp_placeholders_file,
                 ctx.info_file,
                 ctx.version_file,
             ],
             outputs = [stamped_args_file],
+            mnemonic = "CUEReplaceStampBindings",
+            progress_message = "Replacing injection placeholders with stamped values for {}".format(ctx.label.name),
         )
 
 def _cue_def(ctx):
@@ -174,7 +193,7 @@ def _cue_def(ctx):
     _add_common_args(ctx, args, stamped_args_file)
 
     ctx.actions.run_shell(
-        mnemonic = "CueDef",
+        mnemonic = "CUEDef",
         tools = [ctx.executable._cue],
         arguments = [args],
         command = """\
@@ -223,7 +242,7 @@ def _cue_library_impl(ctx):
     args.add("@" + manifest_file.path)
 
     ctx.actions.run(
-        mnemonic = "CuePkg",
+        mnemonic = "CUEPkg",
         outputs = [pkg],
         inputs = [def_out, manifest_file] + ctx.files.srcs,
         executable = ctx.executable._zipper,
@@ -235,10 +254,10 @@ def _cue_library_impl(ctx):
             files = depset([pkg]),
             runfiles = ctx.runfiles(files = [pkg]),
         ),
-        CuePkg(
+        CUEPkgInfo(
             transitive_pkgs = depset(
                 [pkg],
-                transitive = [dep[CuePkg].transitive_pkgs for dep in ctx.attr.deps],
+                transitive = [dep[CUEPkgInfo].transitive_pkgs for dep in ctx.attr.deps],
                 # Provide .cue sources from dependencies first
                 order = "postorder",
             ),
@@ -277,7 +296,7 @@ def _pkg_merge(ctx, src_zip):
     args.add_joined(["-o", merged.path], join_with = "=")
     inputs = depset(
         [src_zip],
-        transitive = [dep[CuePkg].transitive_pkgs for dep in ctx.attr.deps],
+        transitive = [dep[CUEPkgInfo].transitive_pkgs for dep in ctx.attr.deps],
         # Provide .cue sources from dependencies first
         order = "postorder",
     )
@@ -285,7 +304,7 @@ def _pkg_merge(ctx, src_zip):
         args.add(dep.path)
 
     ctx.actions.run(
-        mnemonic = "CuePkgMerge",
+        mnemonic = "CUEPkgMerge",
         executable = ctx.executable._zipmerge,
         arguments = [args],
         inputs = inputs,
@@ -313,7 +332,7 @@ def _cue_export(ctx, merged, output):
     _add_common_args(ctx, args, stamped_args_file)
 
     ctx.actions.run_shell(
-        mnemonic = "CueExport",
+        mnemonic = "CUEExport",
         tools = [ctx.executable._cue],
         arguments = [args],
         command = """
