@@ -10,7 +10,7 @@ load(
 CUEPkgInfo = provider(
     doc = "Collects files from cue_library for use in downstream cue_export",
     fields = {
-        "transitive_pkgs": "CUE pkg zips for this target and its dependencies",
+        "transitive_pkgs": "CUE pkg ZIP files for this target and its dependencies",
     },
 )
 
@@ -178,6 +178,56 @@ def _add_common_args(ctx, args, stamped_args_file):
             progress_message = "Replacing injection placeholders with stamped values for {}".format(ctx.label.name),
         )
 
+def _zip_src(ctx, srcs):
+    # Generate a ZIP file containing the files in srcs.
+
+    zipper_list_content = "".join([_path_in_zip_file(src) + "=" + src.path + "\n" for src in srcs])
+    zipper_list = ctx.actions.declare_file(ctx.label.name + "~zipper.txt")
+    ctx.actions.write(zipper_list, zipper_list_content)
+
+    src_zip = ctx.actions.declare_file(ctx.label.name + "~src.zip")
+
+    args = ctx.actions.args()
+    args.add("c")
+    args.add(src_zip.path)
+    args.add("@" + zipper_list.path)
+
+    ctx.actions.run(
+        mnemonic = "zipper",
+        executable = ctx.executable._zipper,
+        arguments = [args],
+        inputs = [zipper_list] + srcs,
+        outputs = [src_zip],
+        use_default_shell_env = True,
+    )
+
+    return src_zip
+
+def _pkg_merge(ctx, src_zip):
+    merged = ctx.actions.declare_file(ctx.label.name + "~merged.zip")
+
+    args = ctx.actions.args()
+    args.add_joined(["-o", merged.path], join_with = "=")
+    inputs = depset(
+        [src_zip],
+        transitive = [dep[CUEPkgInfo].transitive_pkgs for dep in ctx.attr.deps],
+        # Provide .cue sources from dependencies first
+        order = "postorder",
+    )
+    for dep in inputs.to_list():
+        args.add(dep.path)
+
+    ctx.actions.run(
+        mnemonic = "CUEPkgMerge",
+        executable = ctx.executable._zipmerge,
+        arguments = [args],
+        inputs = inputs,
+        outputs = [merged],
+        use_default_shell_env = True,
+    )
+
+    return merged
+
 def _cue_def(ctx):
     "CUE def library"
     srcs_zip = _zip_src(ctx, ctx.files.srcs)
@@ -229,8 +279,9 @@ def _cue_library_impl(ctx):
     def_out = _cue_def(ctx)
 
     # Create the manifest input to zipper
-    pkg = "pkg/" + ctx.attr.importpath.split(":")[0]
-    manifest = "".join([pkg + "/" + src.basename + "=" + src.path + "\n" for src in ctx.files.srcs])
+    projected_path_prefix = "pkg/" + ctx.attr.importpath.split(":")[0]
+    # TODO(seh): Should we include the "def_out" file in this manifest?
+    manifest = "".join([projected_path_prefix + "/" + src.basename + "=" + src.path + "\n" for src in ctx.files.srcs])
     manifest_file = ctx.actions.declare_file(ctx.label.name + "~manifest")
     ctx.actions.write(manifest_file, manifest)
 
@@ -264,55 +315,29 @@ def _cue_library_impl(ctx):
         ),
     ]
 
-def _zip_src(ctx, srcs):
-    # Generate a ZIP file containing the files in srcs.
+_cue_library_attrs = _add_common_attrs_to({
+    "importpath": attr.string(
+        doc = "CUE import path under pkg/",
+        mandatory = True,
+    ),
+    "_zipper": attr.label(
+        default = Label("@bazel_tools//tools/zip:zipper"),
+        executable = True,
+        allow_single_file = True,
+        cfg = "exec",
+    ),
+    "_zipmerge": attr.label(
+        default = Label("@io_rsc_zipmerge//:zipmerge"),
+        executable = True,
+        allow_single_file = True,
+        cfg = "exec",
+    ),
+})
 
-    zipper_list_content = "".join([_path_in_zip_file(src) + "=" + src.path + "\n" for src in srcs])
-    zipper_list = ctx.actions.declare_file(ctx.label.name + "~zipper.txt")
-    ctx.actions.write(zipper_list, zipper_list_content)
-
-    src_zip = ctx.actions.declare_file(ctx.label.name + "~src.zip")
-
-    args = ctx.actions.args()
-    args.add("c")
-    args.add(src_zip.path)
-    args.add("@" + zipper_list.path)
-
-    ctx.actions.run(
-        mnemonic = "zipper",
-        executable = ctx.executable._zipper,
-        arguments = [args],
-        inputs = [zipper_list] + srcs,
-        outputs = [src_zip],
-        use_default_shell_env = True,
-    )
-
-    return src_zip
-
-def _pkg_merge(ctx, src_zip):
-    merged = ctx.actions.declare_file(ctx.label.name + "~merged.zip")
-
-    args = ctx.actions.args()
-    args.add_joined(["-o", merged.path], join_with = "=")
-    inputs = depset(
-        [src_zip],
-        transitive = [dep[CUEPkgInfo].transitive_pkgs for dep in ctx.attr.deps],
-        # Provide .cue sources from dependencies first
-        order = "postorder",
-    )
-    for dep in inputs.to_list():
-        args.add(dep.path)
-
-    ctx.actions.run(
-        mnemonic = "CUEPkgMerge",
-        executable = ctx.executable._zipmerge,
-        arguments = [args],
-        inputs = inputs,
-        outputs = [merged],
-        use_default_shell_env = True,
-    )
-
-    return merged
+cue_library = rule(
+    implementation = _cue_library_impl,
+    attrs = _cue_library_attrs,
+)
 
 def _cue_export(ctx, merged, output):
     """_cue_export performs an action to export a set of input files."""
@@ -362,30 +387,6 @@ def _cue_export_impl(ctx):
         files = depset([ctx.outputs.export]),
         runfiles = ctx.runfiles(files = [ctx.outputs.export]),
     )
-
-_cue_library_attrs = _add_common_attrs_to({
-    "importpath": attr.string(
-        doc = "CUE import path under pkg/",
-        mandatory = True,
-    ),
-    "_zipper": attr.label(
-        default = Label("@bazel_tools//tools/zip:zipper"),
-        executable = True,
-        allow_single_file = True,
-        cfg = "exec",
-    ),
-    "_zipmerge": attr.label(
-        default = Label("@io_rsc_zipmerge//:zipmerge"),
-        executable = True,
-        allow_single_file = True,
-        cfg = "exec",
-    ),
-})
-
-cue_library = rule(
-    implementation = _cue_library_impl,
-    attrs = _cue_library_attrs,
-)
 
 def _strip_extension(path):
     """Removes the final extension from a path."""
@@ -462,6 +463,29 @@ cue_export = rule(
     outputs = _cue_export_outputs,
 )
 
+# Copied from @bazel_tools//tools/build_defs/repo:utils.bzl
+def _patch(ctx):
+    """Implementation of patching an already extracted repository"""
+    bash_exe = ctx.os.environ["BAZEL_SH"] if "BAZEL_SH" in ctx.os.environ else "bash"
+    for patchfile in ctx.attr.patches:
+        command = "{patchtool} {patch_args} < {patchfile}".format(
+            patchtool = ctx.attr.patch_tool,
+            patchfile = ctx.path(patchfile),
+            patch_args = " ".join([
+                "'%s'" % arg
+                for arg in ctx.attr.patch_args
+            ]),
+        )
+        st = ctx.execute([bash_exe, "-c", command])
+        if st.return_code:
+            fail("Error applying patch %s:\n%s%s" %
+                 (str(patchfile), st.stderr, st.stdout))
+    for cmd in ctx.attr.patch_cmds:
+        st = ctx.execute([bash_exe, "-c", cmd])
+        if st.return_code:
+            fail("Error applying patch command %s:\n%s%s" %
+                 (cmd, st.stdout, st.stderr))
+
 # We can't disable timeouts on Bazel, but we can set them to large values.
 _CUE_REPOSITORY_TIMEOUT = 86400
 
@@ -524,33 +548,10 @@ def _cue_repository_impl(ctx):
 
     _patch(ctx)
 
-# Copied from @bazel_tools//tools/build_defs/repo:utils.bzl
-def _patch(ctx):
-    """Implementation of patching an already extracted repository"""
-    bash_exe = ctx.os.environ["BAZEL_SH"] if "BAZEL_SH" in ctx.os.environ else "bash"
-    for patchfile in ctx.attr.patches:
-        command = "{patchtool} {patch_args} < {patchfile}".format(
-            patchtool = ctx.attr.patch_tool,
-            patchfile = ctx.path(patchfile),
-            patch_args = " ".join([
-                "'%s'" % arg
-                for arg in ctx.attr.patch_args
-            ]),
-        )
-        st = ctx.execute([bash_exe, "-c", command])
-        if st.return_code:
-            fail("Error applying patch %s:\n%s%s" %
-                 (str(patchfile), st.stderr, st.stdout))
-    for cmd in ctx.attr.patch_cmds:
-        st = ctx.execute([bash_exe, "-c", cmd])
-        if st.return_code:
-            fail("Error applying patch command %s:\n%s%s" %
-                 (cmd, st.stdout, st.stderr))
-
 cue_repository = repository_rule(
     implementation = _cue_repository_impl,
     attrs = {
-        # Fundamental attributes of a cue repository
+        # Fundamental attributes of a CUE repository.
         "importpath": attr.string(mandatory = True),
 
         # Attributes for a repository that should be downloaded via HTTP.
@@ -559,7 +560,7 @@ cue_repository = repository_rule(
         "type": attr.string(),
         "sha256": attr.string(),
 
-        # Attributes for a repository that needs automatic build file generation
+        # Attributes for a repository that needs automatic BUILD file generation.
         "build_file_name": attr.string(default = "BUILD.bazel,BUILD"),
         "build_file_generation": attr.string(
             default = "auto",
