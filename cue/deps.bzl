@@ -698,13 +698,6 @@ def cue_rules_dependencies():
         version = "v1.3.2",
     )
     go_repository(
-        name = "io_rsc_zipmerge",
-        importpath = "rsc.io/zipmerge",
-        sum = "h1:SQ3COGthAQ0mTF+xfVFKwmYag+U/QmnUVhNs4YEP8hQ=",
-        version = "v0.0.0-20160407035457-24e6c1052c64",
-    )
-
-    go_repository(
         name = "org_cuelang_go",
         importpath = "cuelang.org/go",
         sum = "h1:/Am5yFDwqnaEi+g942OPM1M4/qtfVSm49wtkQbeh5Z4=",

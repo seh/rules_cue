@@ -30,14 +30,14 @@ func (cl *cueLang) Name() string { return cueName }
 func (cl *cueLang) Kinds() map[string]rule.KindInfo {
 	return map[string]rule.KindInfo{
 		"cue_library": {
-			MatchAttrs: []string{"importpath"},
+			MatchAttrs: []string{"impor_tpath"},
 			NonEmptyAttrs: map[string]bool{
 				"deps": true,
 				"srcs": true,
 			},
 			MergeableAttrs: map[string]bool{
-				"srcs":       true,
-				"importpath": true,
+				"srcs":        true,
+				"import_path": true,
 			},
 			ResolveAttrs: map[string]bool{"deps": true},
 		},
@@ -56,12 +56,12 @@ func (cl *cueLang) Kinds() map[string]rule.KindInfo {
 		"cue_repository": {
 			MatchAttrs: []string{"importpath"},
 			NonEmptyAttrs: map[string]bool{
-				"importpath": true,
-				"sha256":     true,
-				"urls":       true,
+				"import_path": true,
+				"sha256":      true,
+				"urls":        true,
 			},
 			MergeableAttrs: map[string]bool{
-				"importpath":   true,
+				"import_path":  true,
 				"sha256":       true,
 				"strip_prefix": true,
 				"type":         true,

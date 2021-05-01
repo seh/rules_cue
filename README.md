@@ -66,7 +66,7 @@ dependencies (`cue_library` rules, see below).
 ### cue_library
 
 ```py
-cue_library(name, srcs, importpath, deps=[])
+cue_library(name, srcs, import_path, deps=[])
 ```
 
 Defines a collection of Cue files that can be depended on by a `cue_export`. Does not generate any outputs.
@@ -75,7 +75,7 @@ Defines a collection of Cue files that can be depended on by a `cue_export`. Doe
 |-----------------------|----------------------------------------------------------------------------------------------------|
 | `name`                | Unique name for this rule (required).                                                              |
 | `srcs`                | Entry-point files included in this library (required). Package name MUST match the directory name. |
-| `importpath`          | The source import path of this library. Other .cue files can import this library using this path.  |
+| `import_path`         | The source import path of this library. Other CUE files can import this library using this path.  |
 | `deps`                | Dependencies for the `srcs`. Each dependency is a `cue_library`.                                   |
 | `concatenate_objects` | Concatenate multiple objects into a list.                                                          |
 | `expression`          | CUE expression selecting a single value to export.                                                 |

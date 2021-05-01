@@ -124,7 +124,7 @@ func computeImportPath(args language.GenerateArgs) string {
 
 	suffix, err := filepath.Rel(conf.prefixRel, args.Rel)
 	if err != nil {
-		log.Printf("Failed to compute importpath: rel=%q, prefixRel=%q, err=%+v", args.Rel, conf.prefixRel, err)
+		log.Printf("Failed to compute import path: rel=%q, prefixRel=%q, err=%+v", args.Rel, conf.prefixRel, err)
 		return args.Rel
 	}
 	if suffix == "." {
@@ -173,7 +173,7 @@ func (cl *cueLibrary) ToRule() *rule.Rule {
 	sort.Strings(cl.Srcs)
 	rule.SetAttr("srcs", cl.Srcs)
 	rule.SetAttr("visibility", []string{"//visibility:public"})
-	rule.SetAttr("importpath", cl.ImportPath)
+	rule.SetAttr("import_path", cl.ImportPath)
 	imprts := make([]string, 0, len(cl.Imports))
 	for imprt := range cl.Imports {
 		imprts = append(imprts, imprt)

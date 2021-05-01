@@ -9,7 +9,7 @@ cue_library(
         "streamwatcher_go_gen.cue",
         "watch_go_gen.cue",
     ],
-    importpath = "k8s.io/apimachinery/pkg/watch",
+    import_path = "k8s.io/apimachinery/pkg/watch",
     visibility = ["//visibility:public"],
     deps = ["//examples/k8s.io/apimachinery/pkg/runtime:cue_runtime_library"],
 )
