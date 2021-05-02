@@ -30,7 +30,7 @@ func (cl *cueLang) Name() string { return cueName }
 func (cl *cueLang) Kinds() map[string]rule.KindInfo {
 	return map[string]rule.KindInfo{
 		"cue_library": {
-			MatchAttrs: []string{"impor_tpath"},
+			MatchAttrs: []string{"import_path"},
 			NonEmptyAttrs: map[string]bool{
 				"deps": true,
 				"srcs": true,

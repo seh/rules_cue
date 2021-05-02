@@ -7,8 +7,25 @@ load(
     "CUEConfigInfo",
 )
 
+CUEModuleInfo = provider(
+    doc = "Collects files from cue_module targets for use by referring cue_instance targets.",
+    fileds = {
+        "root": """The "cue.mod" directory immediately containing the module file defining this CUE module.""",
+        "external_package_sources": "The set of files in this CUE module defining external packages.",
+    },
+)
+
 CUEInstanceInfo = provider(
-    doc = "Collects files from cue_library for use in downstream cue_export",
+    doc = "Collects files and references from cue_instance targets for use in downstream cue_export targets.",
+    fields = {
+        "def_file": """The output of the "cue def" tool summarizing this package as captured.""",
+        "module": "The CUE module within which this instance sits.",
+        "transitive_instances": "The set of instances referenced by this instance.",
+    },
+)
+
+CUEStandaloneInstanceInfo = provider(
+    doc = "Collects files from cue_library targets for use in downstream cue_export targets.",
     fields = {
         "def_file": """The output of the "cue def" tool summarizing this package as captured.""",
         # TODO(seh): Consider identifying the package name and instance name (if different).
@@ -46,7 +63,7 @@ def _add_common_attrs_to(attrs):
         ),
         "deps": attr.label_list(
             doc = "cue_library targets to include in the evaluation",
-            providers = [CUEInstanceInfo],
+            providers = [CUEStandaloneInstanceInfo],
             allow_files = False,
         ),
         "expression": attr.string(
@@ -185,7 +202,7 @@ module: ""
     return cue_module_file
 
 def _accumulate_cue_library(ctx, lib, files, links):
-    info = lib[CUEInstanceInfo]
+    info = lib[CUEStandaloneInstanceInfo]
 
     cue_def_file = info.def_file
     files.append(cue_def_file)
@@ -206,7 +223,7 @@ def _set_up_cue_module(ctx, cue_module_file, libraries):
     links = []
     for lib in libraries:
         _accumulate_cue_library(ctx, lib, files, links)
-        for lib in lib[CUEInstanceInfo].transitive_instances.to_list():
+        for lib in lib[CUEStandaloneInstanceInfo].transitive_instances.to_list():
             _accumulate_cue_library(ctx, lib, files, links)
 
     return files + links
@@ -247,6 +264,139 @@ ln -s "$(dirname ${output_file})/cue.mod" ./cue.mod
 
     return def_output_file
 
+def _cue_module_impl(ctx):
+    module_file = ctx.file.file
+    expected_module_file = "module.cue"
+    if module_file.basename != expected_module_file:
+        fail(msg = """supplied CUE module file is not named "{}"; got "{}" instead""".format(expected_module_file, module_file.basename))
+    expected_module_directory = "cue.mod"
+    directory = module_file.dirname.basename
+    if directory != expected_module_directory:
+        fail(msg = """supplied CUE module directory is not named "{}"; got "{}" instead""".format(expected_module_directory, directory))
+    return [
+        CUEModuleInfo(
+            root = directory,
+            external_package_sources = depset(
+                direct = [ctx.file.file] + ctx.files.srcs,
+            ),
+        ),
+    ]
+
+_cue_module = rule(
+    implementation = _cue_module_impl,
+    attrs = {
+        "file": attr.label(
+            doc = "module.cue file for this CUE module.",
+            allow_single_file = [".cue"],
+            mandatory = True,
+        ),
+        "srcs": attr.label_list(
+            doc = """Source files defining external packages from the "gen," "pkg," and "usr" directories.""",
+            # TODO(seh): Consider relaxing this restriction to allow other kinds of files.
+            allow_files = [".cue"],
+        ),
+    },
+)
+
+def cue_module(name, **kwargs):
+    file = kwargs.pop("file", "module.cue")
+
+    _cue_module(
+        name = name,
+        file = file,
+        **kwargs
+    )
+
+def _cue_instance_impl(ctx):
+    files = []
+    deps = ctx.attr.deps
+    if CUEModuleInfo in ctx.attr.ancestor:
+        module = ctx.attr.ancestor[CUEModuleInfo]
+        # TODO(seh): Confirm that the current label is dominated by the module.
+    else:
+        module = ctx.attr.ancestor[CUEInstanceInfo].module
+        # TODO(seh): Confirm that the current label is dominated by the ancestor.
+        deps.append(ctx.attr.ancestor)
+
+    for dep in deps:
+        instance = dep[CUEInstanceInfo]
+        files.append(instance.def_file)
+        for dep in instance.transitive_instances.to_list():
+            files.append(dep[CUEInstanceInfo].def_file)
+
+    def_output_file = ctx.actions.declare_file(ctx.label.name + "~def.cue")
+
+    args = ctx.actions.args()
+    args.add("def")
+    args.add("--output", def_output_file.path)
+    path = ctx.label.package
+    if ctx.attr.package_name:
+        path += ":" + ctx.attr.package_name
+    args.add(path)
+    ctx.actions.run(
+        executable = ctx.executable._cue,
+        arguments = [args],
+        inputs = [module.external_package_sources] + files,
+        outputs = [def_output_file],
+        mnemonic = "CUEDef",
+        progress_message = "Capturing the consolidate CUE configuration for instance {}".format(ctx.label.name),
+    )
+    return [
+        CUEInstanceInfo(
+            def_file = def_output_file,
+            module = module,
+            transitive_instances = depset(
+                direct = ctx.attr.deps,
+                transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
+                # Provide CUE sources from dependencies first.
+                order = "postorder",
+            ),
+        ),
+    ]
+
+cue_instance = rule(
+    implementation = _cue_instance_impl,
+    attrs = {
+        "_cue": attr.label(
+            default = "//cue:cue_runtime",
+            executable = True,
+            allow_single_file = True,
+            cfg = "exec",
+        ),
+        "ancestor": attr.label(
+            doc = """Containing CUE instance or module root.
+
+This value must refer either to a dominating target using the
+cue_instance rule (or another rule that yields a CUEInstanceInfo
+provider) or a dominating target using the cue_module rule (or another
+rule that yields a CUEModuleInfo provider).
+""",
+            providers = [[CUEInstanceInfo], [CUEModuleInfo]],
+            mandatory = True,
+        ),
+        "deps": attr.label_list(
+            doc = """cue_instance targets to include in the evaluation.
+
+These instances are those mentioned in import declarations in this
+instance's CUE files.""",
+            providers = [CUEInstanceInfo],
+            allow_files = False,
+        ),
+        "package_name": attr.String(
+            doc = """Name of the CUE package to load for this instance.
+
+If left unspecified, use the basename of the containing Bazel package
+name as the CUE pacakge name.""",
+        ),
+        "srcs": attr.label_list(
+            doc = "CUE input files that are part of the nominated CUE package.",
+            mandatory = True,
+            allow_empty = False,
+            allow_files = True,
+        ),
+    },
+)
+
 def _cue_library_impl(ctx):
     """cue_library_impl validates and summarizes a CUE package.
 
@@ -264,12 +414,12 @@ def _cue_library_impl(ctx):
     def_output_file = _make_cue_def_action(ctx, cue_module_files)
 
     return [
-        CUEInstanceInfo(
+        CUEStandaloneInstanceInfo(
             def_file = def_output_file,
             import_path = ctx.attr.import_path,
             transitive_instances = depset(
                 direct = ctx.attr.deps,
-                transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
+                transitive = [dep[CUEStandaloneInstanceInfo].transitive_instances for dep in ctx.attr.deps],
                 # Provide CUE sources from dependencies first.
                 order = "postorder",
             ),
