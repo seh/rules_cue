@@ -7,13 +7,13 @@ load(
     "CUEConfigInfo",
 )
 
-CUEPkgInfo = provider(
+CUEInstanceInfo = provider(
     doc = "Collects files from cue_library for use in downstream cue_export",
     fields = {
         "def_file": """The output of the "cue def" tool summarizing this package as captured.""",
         # TODO(seh): Consider identifying the package name and instance name (if different).
         "import_path": "The path by which consuming packages import this package.",
-        "transitive_packages": "The set of packages referenced by this package.",
+        "transitive_instances": "The set of instances referenced by this instance.",
     },
 )
 
@@ -46,7 +46,7 @@ def _add_common_attrs_to(attrs):
         ),
         "deps": attr.label_list(
             doc = "cue_library targets to include in the evaluation",
-            providers = [CUEPkgInfo],
+            providers = [CUEInstanceInfo],
             allow_files = False,
         ),
         "expression": attr.string(
@@ -185,7 +185,7 @@ module: ""
     return cue_module_file
 
 def _accumulate_cue_library(ctx, lib, files, links):
-    info = lib[CUEPkgInfo]
+    info = lib[CUEInstanceInfo]
 
     cue_def_file = info.def_file
     files.append(cue_def_file)
@@ -206,7 +206,7 @@ def _set_up_cue_module(ctx, cue_module_file, libraries):
     links = []
     for lib in libraries:
         _accumulate_cue_library(ctx, lib, files, links)
-        for lib in lib[CUEPkgInfo].transitive_packages.to_list():
+        for lib in lib[CUEInstanceInfo].transitive_instances.to_list():
             _accumulate_cue_library(ctx, lib, files, links)
 
     return files + links
@@ -264,12 +264,12 @@ def _cue_library_impl(ctx):
     def_output_file = _make_cue_def_action(ctx, cue_module_files)
 
     return [
-        CUEPkgInfo(
+        CUEInstanceInfo(
             def_file = def_output_file,
             import_path = ctx.attr.import_path,
-            transitive_packages = depset(
+            transitive_instances = depset(
                 direct = ctx.attr.deps,
-                transitive = [dep[CUEPkgInfo].transitive_packages for dep in ctx.attr.deps],
+                transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
                 # Provide CUE sources from dependencies first.
                 order = "postorder",
             ),
