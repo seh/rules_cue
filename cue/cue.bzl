@@ -9,8 +9,10 @@ load(
 
 CUEModuleInfo = provider(
     doc = "Collects files from cue_module targets for use by referring cue_instance targets.",
-    fileds = {
+    fields = {
+        "module_file": """The "module.cue" file in the module directory.""",
         "root": """The "cue.mod" directory immediately containing the module file defining this CUE module.""",
+        # TODO(seh): Consider abandoning this field in favor of using cue_instance for these.
         "external_package_sources": "The set of files in this CUE module defining external packages.",
     },
 )
@@ -162,7 +164,7 @@ def _add_common_args(ctx, args, stamped_args_file):
             "",
         )
     else:
-        stamp_placeholders_file = ctx.actions.declare_file("%s-stamp-bindings" % ctx.label.name)
+        stamp_placeholders_file = ctx.actions.declare_file("{}-stamp-bindings".format(ctx.label.name))
         ctx.actions.write(
             stamp_placeholders_file,
             "\n".join([k + "=" + v for k, v in required_stamp_bindings.items()]),
@@ -270,14 +272,17 @@ def _cue_module_impl(ctx):
     if module_file.basename != expected_module_file:
         fail(msg = """supplied CUE module file is not named "{}"; got "{}" instead""".format(expected_module_file, module_file.basename))
     expected_module_directory = "cue.mod"
-    directory = module_file.dirname.basename
+
+    # Avoid dependency on Skylib's paths.basename function.
+    directory = module_file.dirname.rpartition("/")[-1]
     if directory != expected_module_directory:
         fail(msg = """supplied CUE module directory is not named "{}"; got "{}" instead""".format(expected_module_directory, directory))
     return [
         CUEModuleInfo(
-            root = directory,
+            module_file = ctx.file.file,
+            root = module_file.dirname,
             external_package_sources = depset(
-                direct = [ctx.file.file] + ctx.files.srcs,
+                direct = ctx.files.srcs,
             ),
         ),
     ]
@@ -298,7 +303,7 @@ _cue_module = rule(
     },
 )
 
-def cue_module(name, **kwargs):
+def cue_module(name = "cue.mod", **kwargs):
     file = kwargs.pop("file", "module.cue")
 
     _cue_module(
@@ -307,39 +312,102 @@ def cue_module(name, **kwargs):
         **kwargs
     )
 
+def _make_zip_archive_of(ctx, files):
+    zip_manifest_file = ctx.actions.declare_file("{}-manifest".format(ctx.label.name))
+    ctx.actions.write(
+        zip_manifest_file,
+        "".join(["{}={}\n".format(f.short_path, f.path) for f in files]),
+    )
+    source_zip_file = ctx.actions.declare_file(ctx.label.name + ".zip")
+
+    args = ctx.actions.args()
+    args.add("c")
+    args.add(source_zip_file.path)
+    args.add("@" + zip_manifest_file.path)
+    ctx.actions.run(
+        executable = ctx.executable._zipper,
+        arguments = [args],
+        inputs = files + [zip_manifest_file],
+        outputs = [source_zip_file],
+        mnemonic = "CUECollectSourceZIPFile",
+        progress_message = "Collecting source files from CUE module for instance \"{}\"".format(ctx.label.name),
+    )
+    return source_zip_file
+
+def _cue_instance_directory_path(ctx):
+    if ctx.file.directory_of:
+        f = ctx.file.directory_of
+        return f.path if f.is_directory else f.dirname
+    return "./" + ctx.label.package
+
 def _cue_instance_impl(ctx):
-    files = []
-    deps = ctx.attr.deps
+    files = list(ctx.files.srcs)
+    deps = list(ctx.attr.deps)
     if CUEModuleInfo in ctx.attr.ancestor:
-        module = ctx.attr.ancestor[CUEModuleInfo]
         # TODO(seh): Confirm that the current label is dominated by the module.
+        module = ctx.attr.ancestor[CUEModuleInfo]
     else:
         module = ctx.attr.ancestor[CUEInstanceInfo].module
+
         # TODO(seh): Confirm that the current label is dominated by the ancestor.
         deps.append(ctx.attr.ancestor)
 
+    files.append(module.module_file)
+    files.extend(module.external_package_sources.to_list())
     for dep in deps:
         instance = dep[CUEInstanceInfo]
+        if instance.module != module:
+            fail(msg = """dependency {} of instance {} is not part of CUE module "{}"; got "{}" instead""".format(dep, ctx.label, module, dep.module))
         files.append(instance.def_file)
         for dep in instance.transitive_instances.to_list():
             files.append(dep[CUEInstanceInfo].def_file)
 
+    # NB: CUE needs all the source files within the module to sit
+    # within the directory that contains the "cue.mod"
+    # directory. Bazel splits the static source files from the
+    # generated files, and won't present them in a combined directory
+    # tree. Creating symbolic links from generated files to the static
+    # files or vice versa is difficult, because Bazel actions can only
+    # create actions in the target's package.
+    #
+    # To work around these limitations, we collect all the source
+    # files—both static and generated—into a ZIP archive, then expand
+    # that archive in the root directory of a new action.
+    #
+    # One more difficulty arises: CUE requires that its current
+    # working directory be within the module's directory tree. We have
+    # to change into a directory within that tree, and adjust the
+    # various relative paths that Bazel hands us.
+    source_zip_file = _make_zip_archive_of(ctx, files)
     def_output_file = ctx.actions.declare_file(ctx.label.name + "~def.cue")
-
     args = ctx.actions.args()
-    args.add("def")
-    args.add("--output", def_output_file.path)
-    path = ctx.label.package
-    if ctx.attr.package_name:
-        path += ":" + ctx.attr.package_name
-    args.add(path)
-    ctx.actions.run(
-        executable = ctx.executable._cue,
-        arguments = [args],
-        inputs = [module.external_package_sources] + files,
+    args.add(ctx.executable._cue.path)
+    args.add(source_zip_file.path)
+    args.add(_cue_instance_directory_path(ctx))
+    args.add(ctx.attr.package_name)
+    args.add(def_output_file.path)
+    ctx.actions.run_shell(
+        inputs = [source_zip_file],
+        tools = [ctx.executable._cue],
         outputs = [def_output_file],
+        command = """\
+set -euo pipefail
+
+cue=$1; shift
+source_zip_file=$1; shift
+instance_path=$1; shift
+package_name=$1; shift
+output_file=$1; shift
+
+unzip -q "${source_zip_file}"
+
+oldwd="${PWD}"
+cd "${instance_path}"
+"${oldwd}/${cue}" def --outfile "${oldwd}/${output_file}" ".${package_name:+:${package_name}}"
+""",
+        arguments = [args],
         mnemonic = "CUEDef",
-        progress_message = "Capturing the consolidate CUE configuration for instance {}".format(ctx.label.name),
+        progress_message = "Capturing the consolidated CUE configuration for instance \"{}\"".format(ctx.label.name),
     )
     return [
         CUEInstanceInfo(
@@ -348,8 +416,6 @@ def _cue_instance_impl(ctx):
             transitive_instances = depset(
                 direct = ctx.attr.deps,
                 transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
-                # Provide CUE sources from dependencies first.
-                order = "postorder",
             ),
         ),
     ]
@@ -359,6 +425,12 @@ cue_instance = rule(
     attrs = {
         "_cue": attr.label(
             default = "//cue:cue_runtime",
+            executable = True,
+            allow_single_file = True,
+            cfg = "exec",
+        ),
+        "_zipper": attr.label(
+            default = Label("@bazel_tools//tools/zip:zipper"),
             executable = True,
             allow_single_file = True,
             cfg = "exec",
@@ -380,9 +452,18 @@ rule that yields a CUEModuleInfo provider).
 These instances are those mentioned in import declarations in this
 instance's CUE files.""",
             providers = [CUEInstanceInfo],
-            allow_files = False,
         ),
-        "package_name": attr.String(
+        "directory_of": attr.label(
+            doc = """Directory designator to use as the instance directory.
+
+If the given target is a directory, use that directly. If the given
+target is a file, use the file's containing directory.
+
+If left unspecified, use the Bazel package directory defining this
+cue_instance.""",
+            allow_single_file = True,
+        ),
+        "package_name": attr.string(
             doc = """Name of the CUE package to load for this instance.
 
 If left unspecified, use the basename of the containing Bazel package
@@ -392,7 +473,7 @@ name as the CUE pacakge name.""",
             doc = "CUE input files that are part of the nominated CUE package.",
             mandatory = True,
             allow_empty = False,
-            allow_files = True,
+            allow_files = [".cue"],
         ),
     },
 )

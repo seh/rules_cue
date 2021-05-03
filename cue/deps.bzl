@@ -480,7 +480,6 @@ def cue_rules_dependencies():
         sum = "h1:aoZm08cpOy4WuID//EZDgcC4zIxODThtZNPirFr42+A=",
         version = "v0.0.0-20210226163009-20ebb0f2a09e",
     )
-
     go_repository(
         name = "com_github_pkg_errors",
         importpath = "github.com/pkg/errors",
@@ -799,7 +798,6 @@ def cue_rules_dependencies():
         sum = "h1:g6oFfz6Cmw68izP3xsdud3Oxu145IPkeFzyRg58AKHM=",
         version = "v0.0.0-20200612220849-54c614fe050c",
     )
-
     go_repository(
         name = "org_golang_x_xerrors",
         importpath = "golang.org/x/xerrors",

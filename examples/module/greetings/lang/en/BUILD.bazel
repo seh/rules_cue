@@ -1,0 +1,13 @@
+load("//cue:cue.bzl", "cue_instance")
+
+cue_instance(
+    name = "greeting",
+    ancestor = "//examples/module/greetings:greeting",
+    package_name = "greeting",
+    srcs = [
+        "greeting.cue",
+    ],
+    deps = [
+        "//examples/module/cue.mod/pkg/other-example.com/translations/en:es",
+    ],
+)
