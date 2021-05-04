@@ -1,7 +1,11 @@
-load("//cue:cue.bzl", "cue_instance")
+load(
+    "//cue:cue.bzl",
+    "cue_exported_instance",
+    "cue_instance",
+)
 
 cue_instance(
-    name = "greeting",
+    name = "greeting_instance",
     ancestor = "//examples/module/greetings:greeting",
     package_name = "greeting",
     srcs = [
@@ -10,4 +14,10 @@ cue_instance(
     deps = [
         "//examples/module/cue.mod/pkg/other-example.com/translations/en:es",
     ],
+)
+
+cue_exported_instance(
+    name = "greeting",
+    instance = ":greeting_instance",
+    output_format = "yaml",
 )
