@@ -26,4 +26,10 @@ cue_exported_instance(
     name = "greeting",
     instance = ":greeting_instance",
     output_format = "yaml",
+    path = [
+        "extras:",
+    ],
+    qualified_srcs = {
+        "extras": "yaml",
+    },
 )

@@ -63,6 +63,14 @@ def _add_common_instance_consuming_attrs_to(attrs):
             allow_single_file = True,
             cfg = "exec",
         ),
+        "qualified_srcs": attr.label_keyed_string_dict(
+            doc = """Additional input files that are not part of a CUE package, each together with a qualifier.
+
+The qualifier overrides CUE's normal guessing at a file's type from
+its file extension. Specify it here without the trailing colon
+character.""",
+            allow_files = True,
+        ),
         "srcs": attr.label_list(
             doc = "Additional input files that are not part of a CUE package.",
             allow_files = True,
@@ -127,7 +135,25 @@ data, file name, record index, and record count.""",
     })
     return attrs
 
-def _add_common_instance_consuming_args_to(ctx, args, stamped_args_file):
+def _file_from_label_keyed_string_dict_key(k):
+    # NB: The Targets in a label_keyed_string_dict attribute have the key's
+    # source file in a depset, as opposed being represented directly as in a
+    # label_list attribute.
+    files = k.files.to_list()
+    if len(files) != 1:
+        fail(msg = "Unexpected number of files in target {}: {}".format(k, len(files)))
+    return files[0]
+
+def _file_path_in_zip_archive(file):
+    return file.short_path
+
+def _collect_packageless_file_path(file, lines):
+    p = _file_path_in_zip_archive(file)
+    if p.find(":") != -1:
+        fail(msg = "CUE rejects file paths that contain a colon (:): {}".format(p))
+    lines.append(p + "\n")
+
+def _add_common_instance_consuming_args_to(ctx, args, stamped_args_file, packageless_files_file):
     cue_config = ctx.attr._cue_config[CUEConfigInfo]
     stamping_enabled = ctx.attr.stamping_policy == "Force" or ctx.attr.stamping_policy == "Allow" and cue_config.stamp
     required_stamp_bindings = {}
@@ -159,7 +185,6 @@ def _add_common_instance_consuming_args_to(ctx, args, stamped_args_file):
         args.add("--path", p)
     if ctx.attr.with_context:
         args.add("--with-context")
-    args.add_all(ctx.files.srcs)
 
     if len(required_stamp_bindings) == 0:
         # Create an empty file, in order to unify the command that
@@ -192,6 +217,28 @@ def _add_common_instance_consuming_args_to(ctx, args, stamped_args_file):
             mnemonic = "CUEReplaceStampBindings",
             progress_message = "Replacing injection placeholders with stamped values for {}".format(ctx.label.name),
         )
+
+    # NB: We need to be able to map these source file paths from
+    # relative paths to absolute paths, or at least adjust them to be
+    # relative to whichever working directory within the CUE module we
+    # choose.
+    lines = []
+    srcs = list(ctx.files.srcs)
+    for k, v in ctx.attr.qualified_srcs.items():
+        file = _file_from_label_keyed_string_dict_key(k)
+        if file in srcs:
+            srcs.remove(file)
+        if not v:
+            _collect_packageless_file_path(file, lines)
+            continue
+        lines.append(v + ":")
+        _collect_packageless_file_path(file, lines)
+    for src in srcs:
+        _collect_packageless_file_path(src, lines)
+    ctx.actions.write(
+        packageless_files_file,
+        "\n".join(lines),
+    )
 
 def _cue_module_impl(ctx):
     module_file = ctx.file.file
@@ -327,7 +374,7 @@ def _make_zip_archive_of(ctx, files):
     zip_manifest_file = ctx.actions.declare_file("{}-manifest".format(ctx.label.name))
     ctx.actions.write(
         zip_manifest_file,
-        "".join(["{}={}\n".format(f.short_path, f.path) for f in files]),
+        "".join(["{}={}\n".format(_file_path_in_zip_archive(f), f.path) for f in files]),
     )
     source_zip_file = ctx.actions.declare_file(ctx.label.name + ".zip")
 
@@ -347,6 +394,11 @@ def _make_zip_archive_of(ctx, files):
 
 def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):
     files = list(ctx.files.srcs)
+    for k, v in ctx.attr.qualified_srcs.items():
+        file = _file_from_label_keyed_string_dict_key(k)
+        if file not in files:
+            files.append(file)
+
     instance = ctx.attr.instance[CUEInstanceInfo]
     files.extend(instance.files)
     files.append(instance.module.module_file)
@@ -379,8 +431,10 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
     args.add(instance.package_name)
     stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
     args.add(stamped_args_file.path)
+    packageless_files_file = ctx.actions.declare_file("%s-packageless-files" % ctx.label.name)
+    args.add(packageless_files_file.path)
     args.add(ctx.outputs.result.path)
-    _add_common_instance_consuming_args_to(ctx, args, stamped_args_file)
+    _add_common_instance_consuming_args_to(ctx, args, stamped_args_file, packageless_files_file)
 
     if augment_args:
         augment_args(ctx, args)
@@ -389,6 +443,7 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
         inputs = [
             source_zip_file,
             stamped_args_file,
+            packageless_files_file,
         ],
         tools = [ctx.executable._cue],
         outputs = [ctx.outputs.result],
@@ -401,14 +456,38 @@ source_zip_file=$1; shift
 instance_path=$1; shift
 package_name=$1; shift
 extra_args_file=$1; shift
+packageless_files_file=$1; shift
 output_file=$1; shift
 
 unzip -q "${source_zip_file}"
 
 oldwd="${PWD}"
 cd "${instance_path}"
+
+packageless_file_args=()
+qualifier=
+while read -r line; do
+  if [ -z "${line}" ]; then
+    continue
+  fi
+  if [[ "${line}" =~ .+:$ ]]; then
+    qualifier="${line}"
+  else
+    if [ -n "${qualifier}" ]; then
+      packageless_file_args+=("${qualifier}")
+      qualifier=
+    fi
+    packageless_file_args+=("${oldwd}/${line}")
+  fi
+done < "${oldwd}/${packageless_files_file}"
+if [ -n "${qualifier}" ]; then
+  echo "No file path followed qualifier \"${qualifier}\"." 1>&2
+  exit 1
+fi
+
 "${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
   ".${package_name:+:${package_name}}" \
+  "${packageless_file_args[@]}" \
   $(< "${oldwd}/${extra_args_file}") \
   "${@-}"
 """,
