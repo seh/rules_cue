@@ -71,6 +71,15 @@ def _add_common_instance_consuming_attrs_to(attrs):
             doc = "CUE expression selecting a single value to export.",
             default = "",
         ),
+        "instance": attr.label(
+            doc = """CUE instance to export.
+
+This value must refer either to a target using the cue_instance rule
+or another rule that yields a CUEInstanceInfo provider.
+""",
+            providers = [CUEInstanceInfo],
+            mandatory = True,
+        ),
         "inject": attr.string_dict(
             doc = "Keys and values of tagged fields.",
         ),
@@ -197,7 +206,7 @@ def _cue_module_impl(ctx):
     return [
         CUEModuleInfo(
             module_file = ctx.file.file,
-            root = directory,
+            root = _dirname(module_file.dirname),
             external_package_sources = depset(
                 direct = ctx.files.srcs,
             ),
@@ -336,7 +345,7 @@ def _make_zip_archive_of(ctx, files):
     )
     return source_zip_file
 
-def _cue_exported_instance_impl(ctx):
+def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):
     files = list(ctx.files.srcs)
     instance = ctx.attr.instance[CUEInstanceInfo]
     files.extend(instance.files)
@@ -364,6 +373,7 @@ def _cue_exported_instance_impl(ctx):
     source_zip_file = _make_zip_archive_of(ctx, files)
     args = ctx.actions.args()
     args.add(ctx.executable._cue.path)
+    args.add(cue_subcommand)
     args.add(source_zip_file.path)
     args.add(instance.directory_path)
     args.add(instance.package_name)
@@ -372,9 +382,8 @@ def _cue_exported_instance_impl(ctx):
     args.add(ctx.outputs.result.path)
     _add_common_instance_consuming_args_to(ctx, args, stamped_args_file)
 
-    if ctx.attr.escape:
-        args.add("--escape")
-    args.add("--out", ctx.attr.output_format)
+    if augment_args:
+        augment_args(ctx, args)
 
     ctx.actions.run_shell(
         inputs = [
@@ -387,6 +396,7 @@ def _cue_exported_instance_impl(ctx):
 set -e -u -o pipefail
 
 cue=$1; shift
+subcommand=$1; shift
 source_zip_file=$1; shift
 instance_path=$1; shift
 package_name=$1; shift
@@ -397,15 +407,66 @@ unzip -q "${source_zip_file}"
 
 oldwd="${PWD}"
 cd "${instance_path}"
-"${oldwd}/${cue}" export --outfile "${oldwd}/${output_file}" \
+"${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
   ".${package_name:+:${package_name}}" \
   $(< "${oldwd}/${extra_args_file}") \
   "${@-}"
 """,
         arguments = [args],
-        mnemonic = "CUEExport",
-        progress_message = "Capturing the exported CUE configuration for instance \"{}\"".format(ctx.label.name),
+        mnemonic = mnemonic,
+        progress_message = "Capturing the {} CUE configuration for instance \"{}\"".format(description, ctx.label.name),
     )
+
+def _augment_consolidated_instance_args(ctx, args):
+    args.add("--out", ctx.attr.output_format)
+
+def _cue_consolidated_instance_impl(ctx):
+    _make_instance_consuming_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_instance_args)
+
+_cue_consolidated_instance = rule(
+    implementation = _cue_consolidated_instance_impl,
+    attrs = _add_common_instance_consuming_attrs_to({
+        "output_format": attr.string(
+            doc = "Output format",
+            default = "cue",
+            values = [
+                # TODO(seh): Consider relaxing this set.
+                "cue",
+                "json",
+                "text",
+                "yaml",
+            ],
+        ),
+        "result": attr.output(
+            doc = """The built result in the format specified in the "output_format" attribute.""",
+            mandatory = True,
+        ),
+    }),
+)
+
+def cue_consolidated_instance(name, **kwargs):
+    extension_by_format = {
+        "cue": "cue",
+        "json": "json",
+        "text": "txt",
+        "yaml": "yaml",
+    }
+    output_format = kwargs.get("output_format", "cue")
+    result = kwargs.pop("result", name + "." + extension_by_format[output_format])
+
+    _cue_consolidated_instance(
+        name = name,
+        result = result,
+        **kwargs
+    )
+
+def _augment_exported_instance_args(ctx, args):
+    if ctx.attr.escape:
+        args.add("--escape")
+    args.add("--out", ctx.attr.output_format)
+
+def _cue_exported_instance_impl(ctx):
+    _make_instance_consuming_action(ctx, "export", "CUEExport", "exported", _augment_exported_instance_args)
 
 _cue_exported_instance = rule(
     implementation = _cue_exported_instance_impl,
@@ -414,19 +475,11 @@ _cue_exported_instance = rule(
             doc = "Use HTML escaping.",
             default = False,
         ),
-        "instance": attr.label(
-            doc = """CUE instance to export.
-
-This value must refer either to a target using the cue_instance rule
-or another rule that yields a CUEInstanceInfo provider.
-""",
-            providers = [CUEInstanceInfo],
-            mandatory = True,
-        ),
         "output_format": attr.string(
             doc = "Output format",
             default = "json",
             values = [
+                # TODO(seh): Consider relaxing this set.
                 "json",
                 "text",
                 "yaml",

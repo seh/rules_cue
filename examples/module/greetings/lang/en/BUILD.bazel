@@ -1,5 +1,6 @@
 load(
     "//cue:cue.bzl",
+    "cue_consolidated_instance",
     "cue_exported_instance",
     "cue_instance",
 )
@@ -14,6 +15,11 @@ cue_instance(
     deps = [
         "//examples/module/cue.mod/pkg/other-example.com/translations/en:es",
     ],
+)
+
+cue_consolidated_instance(
+    name = "greeting_def",
+    instance = ":greeting_instance",
 )
 
 cue_exported_instance(
