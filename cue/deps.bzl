@@ -2,6 +2,28 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 _cue_runtimes = {
+    "0.4.0-beta.1": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "3949038e2eab93ab066874ede21910d64f46ac89520a7a873a6e871d94769947",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "187bddf61b87f14c735e2404a5f3fa08dba949457e17104bf248b1d1a7e267dd",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "676ee508fe1908fd84b59959d3150f3b5b0248d73a7fda95d768a2f7ab1c4062",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "5f443bde940beeb34798822797e32f2ba2c2e283e97be9fdc34083017efe6e4b",
+        },
+    ],
     "0.4.0-alpha.2": [
         {
             "os": "Darwin",
@@ -22,28 +44,6 @@ _cue_runtimes = {
             "os": "Windows",
             "arch": "amd64",
             "sha256": "4ed38cba4a40c7a0f60f3b66c601bb812855b8dd597b74421271cecdeeeba7c4",
-        },
-    ],
-    "0.4.0-alpha.1": [
-        {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "06d25f8f53ee6f9214a5fbb200f1d24c478dd4c2c0634dac3372b7d61baa67f4",
-        },
-        {
-            "os": "Linux",
-            "arch": "amd64",
-            "sha256": "9903f10fa1e9dfc3c32918a5734cca35bc78135778fef00384210bfe1cbbc00a",
-        },
-        {
-            "os": "Linux",
-            "arch": "arm64",
-            "sha256": "0cd98cb2017cc7fae61fd6a80c39a957191f299d930a424f08f21ee02478ab35",
-        },
-        {
-            "os": "Windows",
-            "arch": "amd64",
-            "sha256": "b9773d3dcd5929e759279942a6a90642e44fe030803ba687434844712e8d7e10",
         },
     ],
     "0.3.2": [
@@ -70,7 +70,7 @@ _cue_runtimes = {
     ],
 }
 
-def cue_register_toolchains(version = "0.4.0-alpha.2"):
+def cue_register_toolchains(version = "0.4.0-beta.1"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":
