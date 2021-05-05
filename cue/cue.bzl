@@ -94,6 +94,9 @@ or another rule that yields a CUEInstanceInfo provider.
         "inject_shorthand": attr.string_list(
             doc = "Shorthand values of tagged fields.",
         ),
+        "inject_system_variables": attr.bool(
+            doc = "Whether to inject the predefined set of system variables into tagged fields",
+        ),
         "concatenate_objects": attr.bool(
             doc = "Concatenate multiple objects into a list.",
         ),
@@ -177,6 +180,8 @@ def _add_common_instance_consuming_args_to(ctx, args, stamped_args_file, package
         args.add("--inject", v)
     if ctx.attr.concatenate_objects:
         args.add("--list")
+    if ctx.attr.inject_system_variables:
+        args.add("--inject-vars")
     if not ctx.attr.merge_other_files:
         args.add("--merge=false")
     for p in ctx.attr.path:
