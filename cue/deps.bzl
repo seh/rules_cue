@@ -1,5 +1,15 @@
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_gazelle//:deps.bzl", "go_repository")
+load(
+    "@bazel_tools//tools/build_defs/repo:http.bzl",
+    "http_archive",
+)
+load(
+    "@bazel_gazelle//:deps.bzl",
+    "go_repository",
+)
+load(
+    "@bazel_skylib//:workspace.bzl",
+    "bazel_skylib_workspace",
+)
 
 _cue_runtimes = {
     "0.4.0-beta.1": [
@@ -83,6 +93,8 @@ def cue_register_toolchains(version = "0.4.0-beta.1"):
         )
 
 def cue_rules_dependencies():
+    bazel_skylib_workspace()
+
     go_repository(
         name = "co_honnef_go_tools",
         importpath = "honnef.co/go/tools",

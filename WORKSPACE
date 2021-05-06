@@ -33,9 +33,13 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies()
 
-#
-# Eat our own dog food
-#
+load(
+    "//cue:repositories.bzl",
+    "cue_repositories",
+)
+
+cue_repositories()
+
 load(
     "//cue:deps.bzl",
     "cue_register_toolchains",
