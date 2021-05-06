@@ -80,13 +80,15 @@ character.""",
             default = "",
         ),
         "instance": attr.label(
-            doc = """CUE instance to export.
+            doc = """CUE instance to export, if any.
 
-This value must refer either to a target using the cue_instance rule
-or another rule that yields a CUEInstanceInfo provider.
-""",
+If supplied, this value must refer either to a target using the
+cue_instance rule or another rule that yields a CUEInstanceInfo
+provider.
+
+If not supplied, treat this instance as an ad hoc collection of files
+that are not part of a containing CUE module.""",
             providers = [CUEInstanceInfo],
-            mandatory = True,
         ),
         "inject": attr.string_dict(
             doc = "Keys and values of tagged fields.",
@@ -404,12 +406,14 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
         if file not in files:
             files.append(file)
 
-    instance = ctx.attr.instance[CUEInstanceInfo]
-    files.extend(instance.files)
-    files.append(instance.module.module_file)
-    files.extend(instance.module.external_package_sources.to_list())
-    for dep in instance.transitive_instances.to_list():
-        files.extend(dep[CUEInstanceInfo].files)
+    instance = None
+    if ctx.attr.instance:
+        instance = ctx.attr.instance[CUEInstanceInfo]
+        files.extend(instance.files)
+        files.append(instance.module.module_file)
+        files.extend(instance.module.external_package_sources.to_list())
+        for dep in instance.transitive_instances.to_list():
+            files.extend(dep[CUEInstanceInfo].files)
 
     # NB: CUE needs all the source files within the module to sit
     # within the directory that contains the "cue.mod"
@@ -429,11 +433,12 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
     # various relative paths that Bazel hands us.
     source_zip_file = _make_zip_archive_of(ctx, files)
     args = ctx.actions.args()
+    if instance:
+        args.add("-i", instance.directory_path)
+        args.add("-p", instance.package_name)
     args.add(ctx.executable._cue.path)
     args.add(cue_subcommand)
     args.add(source_zip_file.path)
-    args.add(instance.directory_path)
-    args.add(instance.package_name)
     stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
     args.add(stamped_args_file.path)
     packageless_files_file = ctx.actions.declare_file("%s-packageless-files" % ctx.label.name)
@@ -455,11 +460,32 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
         command = """\
 set -e -u -o pipefail
 
+function usage() {
+  printf "usage: %s [-i instance_path] [-p package_name] cue_tool cue_subcommand source_zip_file extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  exit 2
+}
+
+instance_path=
+package_name=
+
+function parse_args() {
+  while getopts i:p: name
+  do
+    case "${name}" in
+      i) instance_path="${OPTARG}";;
+      h) usage;;
+      p) package_name="${OPTARG}";;
+      ?) usage;;
+    esac
+  done
+}
+
+parse_args "${@}"
+shift $((OPTIND - 1))
+
 cue=$1; shift
 subcommand=$1; shift
 source_zip_file=$1; shift
-instance_path=$1; shift
-package_name=$1; shift
 extra_args_file=$1; shift
 packageless_files_file=$1; shift
 output_file=$1; shift
@@ -467,7 +493,9 @@ output_file=$1; shift
 unzip -q "${source_zip_file}"
 
 oldwd="${PWD}"
-cd "${instance_path}"
+if [ -n "${instance_path}" ]; then
+  cd "${instance_path}"
+fi
 
 packageless_file_args=()
 qualifier=
@@ -491,7 +519,7 @@ if [ -n "${qualifier}" ]; then
 fi
 
 "${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
-  ".${package_name:+:${package_name}}" \
+  ${instance_path:+.${package_name:+:${package_name}}} \
   "${packageless_file_args[@]}" \
   $(< "${oldwd}/${extra_args_file}") \
   "${@-}"
