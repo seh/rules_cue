@@ -71,14 +71,6 @@ character.""",
             doc = "CUE expression selecting a single value to export.",
             default = "",
         ),
-        "instance": attr.label(
-            doc = """CUE instance to export.
- 
-This value must refer either to a target using the cue_instance rule
-or another rule that yields a CUEInstanceInfo provider.""",
-            providers = [CUEInstanceInfo],
-            mandatory = True,
-        ),
         "inject": attr.string_dict(
             doc = "Keys and values of tagged fields.",
         ),
@@ -125,6 +117,27 @@ flag is active.""",
 Instead of evaluating these elements in the context of the value being
 situated, instead evaluate them within a struct identifying the source
 data, file name, record index, and record count.""",
+        ),
+    })
+    return attrs
+
+def _add_common_module_based_attrs_to(attrs):
+    attrs = _add_common_output_producing_attrs_to(attrs)
+    attrs.update({
+        "deps": attr.label_list(
+            doc = """cue_instance targets to include in the evaluation.
+
+These instances are those mentioned in import declarations in this set
+of CUE files.""",
+            providers = [CUEInstanceInfo],
+        ),
+        "module": attr.label(
+            doc = """CUE module within which these files sit.
+
+This value must refer either to a target using the cue_module rule or
+another rule that yields a CUEModuleInfo provider.""",
+            providers = [CUEModuleInfo],
+            mandatory = True,
         ),
     })
     return attrs
@@ -542,6 +555,27 @@ fi
         progress_message = "Capturing the {} CUE configuration for target \"{}\"".format(description, ctx.label.name),
     )
 
+def _make_module_based_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):
+    module = ctx.attr.module[CUEModuleInfo]
+    files = [module.module_file]
+    files.extend(module.external_package_sources.to_list())
+    deps = depset(
+        direct = ctx.attr.deps,
+        transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
+    )
+    for dep in deps.to_list():
+        files.extend(dep[CUEInstanceInfo].files)
+
+    _make_output_producing_action(
+        ctx,
+        cue_subcommand,
+        mnemonic,
+        description,
+        files,
+        augment_args,
+        module.root,
+    )
+
 def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):
     instance = ctx.attr.instance[CUEInstanceInfo]
     files = list(instance.files)
@@ -562,15 +596,11 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
         instance.package_name,
     )
 
-def _augment_consolidated_instance_args(ctx, args):
+def _augment_consolidated_output_args(ctx, args):
     args.add("--out", ctx.attr.output_format)
 
-def _cue_consolidated_instance_impl(ctx):
-    _make_instance_consuming_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_instance_args)
-
-_cue_consolidated_instance = rule(
-    implementation = _cue_consolidated_instance_impl,
-    attrs = _add_common_instance_consuming_attrs_to({
+def _add_common_consolidated_output_attrs_to(attrs):
+    attrs.update({
         "output_format": attr.string(
             doc = "Output format",
             default = "cue",
@@ -586,10 +616,10 @@ _cue_consolidated_instance = rule(
             doc = """The built result in the format specified in the "output_format" attribute.""",
             mandatory = True,
         ),
-    }),
-)
+    })
+    return attrs
 
-def cue_consolidated_instance(name, **kwargs):
+def _wrap_consolidated_output_rule(f, name, **kwargs):
     extension_by_format = {
         "cue": "cue",
         "json": "json",
@@ -599,23 +629,41 @@ def cue_consolidated_instance(name, **kwargs):
     output_format = kwargs.get("output_format", "cue")
     result = kwargs.pop("result", name + "." + extension_by_format[output_format])
 
-    _cue_consolidated_instance(
+    f(
         name = name,
         result = result,
         **kwargs
     )
 
-def _augment_exported_instance_args(ctx, args):
+def _cue_consolidated_files_impl(ctx):
+    _make_module_based_output_producing_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_output_args)
+
+_cue_consolidated_files = rule(
+    implementation = _cue_consolidated_files_impl,
+    attrs = _add_common_consolidated_output_attrs_to(_add_common_module_based_attrs_to({})),
+)
+
+def cue_consolidated_files(name, **kwargs):
+    _wrap_consolidated_output_rule(_cue_consolidated_files, name, **kwargs)
+
+def _cue_consolidated_instance_impl(ctx):
+    _make_instance_consuming_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_output_args)
+
+_cue_consolidated_instance = rule(
+    implementation = _cue_consolidated_instance_impl,
+    attrs = _add_common_consolidated_output_attrs_to(_add_common_instance_consuming_attrs_to({})),
+)
+
+def cue_consolidated_instance(name, **kwargs):
+    _wrap_consolidated_output_rule(_cue_consolidated_instance, name, **kwargs)
+
+def _augment_exported_output_args(ctx, args):
     if ctx.attr.escape:
         args.add("--escape")
     args.add("--out", ctx.attr.output_format)
 
-def _cue_exported_instance_impl(ctx):
-    _make_instance_consuming_action(ctx, "export", "CUEExport", "exported", _augment_exported_instance_args)
-
-_cue_exported_instance = rule(
-    implementation = _cue_exported_instance_impl,
-    attrs = _add_common_instance_consuming_attrs_to({
+def _add_common_exported_output_attrs_to(attrs):
+    attrs.update({
         "escape": attr.bool(
             doc = "Use HTML escaping.",
             default = False,
@@ -634,10 +682,10 @@ _cue_exported_instance = rule(
             doc = """The built result in the format specified in the "output_format" attribute.""",
             mandatory = True,
         ),
-    }),
-)
+    })
+    return attrs
 
-def cue_exported_instance(name, **kwargs):
+def _wrap_exported_output_rule(f, name, **kwargs):
     extension_by_format = {
         "json": "json",
         "text": "txt",
@@ -646,8 +694,30 @@ def cue_exported_instance(name, **kwargs):
     output_format = kwargs.get("output_format", "json")
     result = kwargs.pop("result", name + "." + extension_by_format[output_format])
 
-    _cue_exported_instance(
+    f(
         name = name,
         result = result,
         **kwargs
     )
+
+def _cue_exported_files_impl(ctx):
+    _make_module_based_output_producing_action(ctx, "export", "CUEExport", "exported", _augment_exported_output_args)
+
+_cue_exported_files = rule(
+    implementation = _cue_exported_files_impl,
+    attrs = _add_common_exported_output_attrs_to(_add_common_module_based_attrs_to({})),
+)
+
+def cue_exported_files(name, **kwargs):
+    _wrap_exported_output_rule(_cue_exported_files, name, **kwargs)
+
+def _cue_exported_instance_impl(ctx):
+    _make_instance_consuming_action(ctx, "export", "CUEExport", "exported", _augment_exported_output_args)
+
+_cue_exported_instance = rule(
+    implementation = _cue_exported_instance_impl,
+    attrs = _add_common_exported_output_attrs_to(_add_common_instance_consuming_attrs_to({})),
+)
+
+def cue_exported_instance(name, **kwargs):
+    _wrap_exported_output_rule(_cue_exported_instance, name, **kwargs)

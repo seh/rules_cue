@@ -1,3 +1,3 @@
-import "github.com/tnarg/rules_cue/examples/lang:de"
+import "example.com/lang:de"
 de
 mixed: true

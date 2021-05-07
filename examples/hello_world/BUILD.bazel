@@ -1,29 +1,39 @@
-load("@com_github_tnarg_rules_cue//cue:cue.bzl", "cue_export")
+load(
+    "//cue:cue.bzl",
+    "cue_exported_files",
+    "cue_exported_instance",
+)
 
-cue_export(
+_MODULE = "//examples/hello_world/cue.mod"
+
+cue_exported_files(
     name = "hello_world",
+    module = _MODULE,
     srcs = ["hello_world.cue"],
     visibility = ["//visibility:public"],
 )
 
-cue_export(
+cue_exported_files(
     name = "message",
+    module = _MODULE,
     srcs = ["hello_world.cue"],
     expression = "message",
     output_format = "text",
     visibility = ["//visibility:public"],
 )
 
-cue_export(
+cue_exported_files(
     name = "de",
+    module = _MODULE,
     srcs = ["de.cue"],
+    deps = ["//examples/hello_world/lang:cue_de_library"],
     visibility = ["//visibility:public"],
-    deps = ["//examples/lang:cue_de_library"],
 )
 
-cue_export(
+cue_exported_files(
     name = "en",
+    module = _MODULE,
     srcs = ["en.cue"],
+    deps = ["//examples/hello_world/lang:cue_en_library"],
     visibility = ["//visibility:public"],
-    deps = ["//examples/lang:cue_en_library"],
 )

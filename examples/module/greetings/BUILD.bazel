@@ -1,4 +1,7 @@
-load("//cue:cue.bzl", "cue_instance")
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
 
 cue_instance(
     name = "greeting",
