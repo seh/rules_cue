@@ -1,6 +1,9 @@
-load("@com_github_tnarg_rules_cue//cue:cue.bzl", "cue_export")
+load(
+    "//cue:cue.bzl",
+    "cue_exported_standalone_files",
+)
 
-cue_export(
+cue_exported_standalone_files(
     name = "raw_text",
     srcs = ["raw.txt"],
     path = [
@@ -10,7 +13,7 @@ cue_export(
     visibility = ["//visibility:public"],
 )
 
-cue_export(
+cue_exported_standalone_files(
     name = "multiple",
     srcs = [
         "path.cue",
@@ -20,6 +23,6 @@ cue_export(
         "path.Base(filename)",
     ],
     with_context = True,
-    output_name = "multiple.json",
+    result = "multiple.json",
     visibility = ["//visibility:public"],
 )

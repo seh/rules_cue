@@ -4,9 +4,8 @@ load(
 )
 
 cue_instance(
-    name = "cue_myservice",
+    name = "cue_intstr_library",
     ancestor = "//examples/myservice/cue.mod",
-    srcs = ["my-deployment.cue"],
-    deps = ["//examples/myservice/cue.mod/pkg/k8s.io/api/apps/v1:cue_v1_library"],
+    srcs = ["intstr_go_gen.cue"],
     visibility = ["//examples/myservice:__subpackages__"],
 )

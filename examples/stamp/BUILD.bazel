@@ -1,6 +1,9 @@
-load("@com_github_tnarg_rules_cue//cue:cue.bzl", "cue_export")
+load(
+    "//cue:cue.bzl",
+    "cue_exported_standalone_files",
+)
 
-cue_export(
+cue_exported_standalone_files(
     name = "stamp",
     srcs = ["stamped.cue"],
     inject = {

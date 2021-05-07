@@ -10,7 +10,6 @@ cue_exported_files(
     name = "hello_world",
     module = _MODULE,
     srcs = ["hello_world.cue"],
-    visibility = ["//visibility:public"],
 )
 
 cue_exported_files(
@@ -19,7 +18,6 @@ cue_exported_files(
     srcs = ["hello_world.cue"],
     expression = "message",
     output_format = "text",
-    visibility = ["//visibility:public"],
 )
 
 cue_exported_files(
@@ -27,7 +25,6 @@ cue_exported_files(
     module = _MODULE,
     srcs = ["de.cue"],
     deps = ["//examples/hello_world/lang:cue_de_library"],
-    visibility = ["//visibility:public"],
 )
 
 cue_exported_files(
@@ -35,5 +32,4 @@ cue_exported_files(
     module = _MODULE,
     srcs = ["en.cue"],
     deps = ["//examples/hello_world/lang:cue_en_library"],
-    visibility = ["//visibility:public"],
 )

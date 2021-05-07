@@ -1,7 +1,11 @@
-load("@com_github_tnarg_rules_cue//cue:cue.bzl", "cue_library")
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
 
-cue_library(
+cue_instance(
     name = "cue_runtime_library",
+    ancestor = "//examples/myservice/cue.mod",
     srcs = [
         "codec_go_gen.cue",
         "conversion_go_gen.cue",
@@ -14,6 +18,5 @@ cue_library(
         "types_go_gen.cue",
         "types_proto_go_gen.cue",
     ],
-    import_path = "k8s.io/apimachinery/pkg/runtime",
-    visibility = ["//visibility:public"],
+    visibility = ["//examples/myservice:__subpackages__"],
 )

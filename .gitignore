@@ -1,2 +1,6 @@
-bazel-*
+/bazel-bin
+/bazel-out
+/bazel-rules_cue
+/bazel-testlogs
+
 *~

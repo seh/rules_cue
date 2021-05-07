@@ -4,9 +4,12 @@ load(
 )
 
 cue_instance(
-    name = "cue_myservice",
+    name = "cue_resource_library",
     ancestor = "//examples/myservice/cue.mod",
-    srcs = ["my-deployment.cue"],
-    deps = ["//examples/myservice/cue.mod/pkg/k8s.io/api/apps/v1:cue_v1_library"],
+    srcs = [
+        "amount_go_gen.cue",
+        "math_go_gen.cue",
+        "quantity_go_gen.cue",
+    ],
     visibility = ["//examples/myservice:__subpackages__"],
 )

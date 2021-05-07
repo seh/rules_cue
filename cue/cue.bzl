@@ -415,7 +415,7 @@ def _make_zip_archive_of(ctx, files):
     )
     return source_zip_file
 
-def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, dependency_files = [], augment_args = None, module_directory_path = None, instance_directory_path = None, instance_package_name = None):
+def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, dependency_files = [], module_directory_path = None, instance_directory_path = None, instance_package_name = None):
     files = list(ctx.files.srcs)
     for k, v in ctx.attr.qualified_srcs.items():
         file = _file_from_label_keyed_string_dict_key(k)
@@ -473,6 +473,13 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, de
         ],
         tools = [ctx.executable._cue],
         outputs = [ctx.outputs.result],
+        # NB: See https://stackoverflow.com/questions/7577052 for the
+        # odd treatment of the "packageless_file_args" array variable
+        # in this script, handling the case where the array winds up
+        # empty for lack of so-called "packageless files" being used
+        # as input. As we are uncertain of which Bash we'll wind up
+        # using, aim to work around as many of their mutually
+        # exclusive defects as possible.
         command = """\
 set -e -u -o pipefail
 
@@ -545,8 +552,8 @@ if [ -n "${qualifier}" ]; then
 fi
 
 "${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
-  ${instance_path:+./${instance_path}${package_name:+:${package_name}}} \
-  "${packageless_file_args[@]}" \
+  ${instance_path}${package_name:+:${package_name}} \
+  ${packageless_file_args[@]+"${packageless_file_args[@]}"} \
   $(< "${oldwd}/${extra_args_file}") \
   "${@-}"
 """,
@@ -571,8 +578,8 @@ def _make_module_based_output_producing_action(ctx, cue_subcommand, mnemonic, de
         cue_subcommand,
         mnemonic,
         description,
-        files,
         augment_args,
+        files,
         module.root,
     )
 
@@ -584,15 +591,25 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
     for dep in instance.transitive_instances.to_list():
         files.extend(dep[CUEInstanceInfo].files)
 
+    # NB: If the input path is equal to the starting path, the
+    # "paths.relativize" function returns the input path unchanged, as
+    # opposed to returning "." to indicate that it's the same
+    # directory.
+    relative_instance_path = paths.relativize(instance.directory_path, instance.module.root)
+    if relative_instance_path == instance.directory_path:
+        relative_instance_path = "."
+    else:
+        relative_instance_path = "./" + relative_instance_path
+
     _make_output_producing_action(
         ctx,
         cue_subcommand,
         mnemonic,
         description,
-        files,
         augment_args,
+        files,
         instance.module.root,
-        paths.relativize(instance.directory_path, instance.module.root),
+        relative_instance_path,
         instance.package_name,
     )
 
@@ -634,6 +651,23 @@ def _wrap_consolidated_output_rule(f, name, **kwargs):
         result = result,
         **kwargs
     )
+
+def _cue_consolidated_standalone_files_impl(ctx):
+    _make_output_producing_action(
+        ctx,
+        "def",
+        "CUEDef",
+        "consolidated",
+        _augment_consolidated_output_args,
+    )
+
+_cue_consolidated_standalone_files = rule(
+    implementation = _cue_consolidated_standalone_files_impl,
+    attrs = _add_common_consolidated_output_attrs_to(_add_common_output_producing_attrs_to({})),
+)
+
+def cue_consolidated_standalone_files(name, **kwargs):
+    _wrap_consolidated_output_rule(_cue_consolidated_standalone_files, name, **kwargs)
 
 def _cue_consolidated_files_impl(ctx):
     _make_module_based_output_producing_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_output_args)
@@ -699,6 +733,23 @@ def _wrap_exported_output_rule(f, name, **kwargs):
         result = result,
         **kwargs
     )
+
+def _cue_exported_standalone_files_impl(ctx):
+    _make_output_producing_action(
+        ctx,
+        "export",
+        "CUEExport",
+        "exported",
+        _augment_exported_output_args,
+    )
+
+_cue_exported_standalone_files = rule(
+    implementation = _cue_exported_standalone_files_impl,
+    attrs = _add_common_exported_output_attrs_to(_add_common_output_producing_attrs_to({})),
+)
+
+def cue_exported_standalone_files(name, **kwargs):
+    _wrap_exported_output_rule(_cue_exported_standalone_files, name, **kwargs)
 
 def _cue_exported_files_impl(ctx):
     _make_module_based_output_producing_action(ctx, "export", "CUEExport", "exported", _augment_exported_output_args)
