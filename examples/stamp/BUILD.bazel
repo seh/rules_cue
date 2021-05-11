@@ -11,6 +11,6 @@ cue_exported_standalone_files(
         "builtby": "{BUILD_USER}",
         "message": "Goodbye.",
     },
-    visibility = ["//visibility:public"],
     stamping_policy = "Force",
+    visibility = ["//visibility:public"],
 )
