@@ -5,7 +5,6 @@ load(
 
 cue_instance(
     name = "cue_runtime_library",
-    ancestor = "//examples/myservice/cue.mod",
     srcs = [
         "codec_go_gen.cue",
         "conversion_go_gen.cue",
@@ -18,5 +17,6 @@ cue_instance(
         "types_go_gen.cue",
         "types_proto_go_gen.cue",
     ],
+    ancestor = "//examples/myservice/cue.mod",
     visibility = ["//examples/myservice:__subpackages__"],
 )

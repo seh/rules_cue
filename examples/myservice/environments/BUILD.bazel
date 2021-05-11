@@ -5,8 +5,8 @@ load(
 
 cue_exported_files(
     name = "dev",
-    module = "//examples/myservice/cue.mod",
     srcs = ["dev.cue"],
+    module = "//examples/myservice/cue.mod",
     deps = [
         "//examples/myservice:cue_myservice",
     ],
@@ -14,8 +14,8 @@ cue_exported_files(
 
 cue_exported_files(
     name = "prod",
-    module = "//examples/myservice/cue.mod",
     srcs = ["prod.cue"],
+    module = "//examples/myservice/cue.mod",
     deps = [
         "//examples/myservice:cue_myservice",
     ],

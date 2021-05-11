@@ -2,10 +2,10 @@ load("//cue:cue.bzl", "cue_instance")
 
 cue_instance(
     name = "en",
-    ancestor = "//examples/module/cue.mod",
     package_name = "en",
     srcs = [
         "en.cue",
     ],
+    ancestor = "//examples/module/cue.mod",
     visibility = ["//examples/module:__subpackages__"],
 )

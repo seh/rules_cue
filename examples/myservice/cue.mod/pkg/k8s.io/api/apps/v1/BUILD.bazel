@@ -5,16 +5,16 @@ load(
 
 cue_instance(
     name = "cue_v1_library",
-    ancestor = "//examples/myservice/cue.mod",
     srcs = [
         "register_go_gen.cue",
         "types_go_gen.cue",
     ],
+    ancestor = "//examples/myservice/cue.mod",
+    visibility = ["//examples/myservice:__subpackages__"],
     deps = [
         "//examples/myservice/cue.mod/pkg/k8s.io/api/core/v1:cue_v1_library",
         "//examples/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/apis/meta/v1:cue_v1_library",
         "//examples/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/runtime:cue_runtime_library",
         "//examples/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/util/intstr:cue_intstr_library",
     ],
-    visibility = ["//examples/myservice:__subpackages__"],
 )

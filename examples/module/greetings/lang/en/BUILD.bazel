@@ -7,11 +7,11 @@ load(
 
 cue_instance(
     name = "greeting_instance",
-    ancestor = "//examples/module/greetings:greeting",
     package_name = "greeting",
     srcs = [
         "greeting.cue",
     ],
+    ancestor = "//examples/module/greetings:greeting",
     deps = [
         "//examples/module/cue.mod/pkg/other-example.com/translations/en:es",
     ],

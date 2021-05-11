@@ -22,7 +22,7 @@ cue_exported_standalone_files(
     path = [
         "path.Base(filename)",
     ],
-    with_context = True,
     result = "multiple.json",
     visibility = ["//visibility:public"],
+    with_context = True,
 )

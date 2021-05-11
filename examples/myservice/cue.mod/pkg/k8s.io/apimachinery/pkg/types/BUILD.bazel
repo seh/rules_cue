@@ -5,7 +5,6 @@ load(
 
 cue_instance(
     name = "cue_types_library",
-    ancestor = "//examples/myservice/cue.mod",
     srcs = [
         "doc_go_gen.cue",
         "namespacedname_go_gen.cue",
@@ -13,5 +12,6 @@ cue_instance(
         "patch_go_gen.cue",
         "uid_go_gen.cue",
     ],
+    ancestor = "//examples/myservice/cue.mod",
     visibility = ["//examples/myservice:__subpackages__"],
 )
