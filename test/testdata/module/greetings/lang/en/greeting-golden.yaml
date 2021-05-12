@@ -1,0 +1,4 @@
+extras:
+- Greetings from a YAML document.
+- Nice to meet you.
+greeting: Hello or, if you prefer, hola!

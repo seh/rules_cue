@@ -1,0 +1,7 @@
+{
+    "b": true,
+    "i": 1,
+    "n": 2.5,
+    "s": "something",
+    "env": "prod"
+}

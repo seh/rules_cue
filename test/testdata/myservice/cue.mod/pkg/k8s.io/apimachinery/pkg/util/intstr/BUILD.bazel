@@ -1,0 +1,11 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "cue_intstr_library",
+    srcs = ["intstr_go_gen.cue"],
+    ancestor = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test/testdata/myservice:__subpackages__"],
+)

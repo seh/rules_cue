@@ -1,0 +1,5 @@
+load("//cue:cue.bzl", "cue_module")
+
+cue_module(
+    visibility = ["//test/testdata/myservice:__subpackages__"],
+)

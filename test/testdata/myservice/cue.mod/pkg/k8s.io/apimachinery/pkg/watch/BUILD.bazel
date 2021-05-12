@@ -1,0 +1,18 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "cue_watch_library",
+    srcs = [
+        "doc_go_gen.cue",
+        "filter_go_gen.cue",
+        "mux_go_gen.cue",
+        "streamwatcher_go_gen.cue",
+        "watch_go_gen.cue",
+    ],
+    ancestor = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test/testdata/myservice:__subpackages__"],
+    deps = ["//test/testdata/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/runtime:cue_runtime_library"],
+)

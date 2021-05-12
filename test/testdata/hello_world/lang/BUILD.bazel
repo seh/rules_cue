@@ -1,0 +1,22 @@
+package(default_visibility = ["//test/testdata/hello_world:__subpackages__"])
+
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+ANCESTOR = "//test/testdata/hello_world/cue.mod"
+
+cue_instance(
+    name = "cue_en_library",
+    package_name = "en",
+    srcs = ["en.cue"],
+    ancestor = ANCESTOR,
+)
+
+cue_instance(
+    name = "cue_de_library",
+    package_name = "de",
+    srcs = ["de.cue"],
+    ancestor = ANCESTOR,
+)

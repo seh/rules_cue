@@ -1,0 +1,22 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "cue_runtime_library",
+    srcs = [
+        "codec_go_gen.cue",
+        "conversion_go_gen.cue",
+        "converter_go_gen.cue",
+        "doc_go_gen.cue",
+        "helper_go_gen.cue",
+        "interfaces_go_gen.cue",
+        "negotiate_go_gen.cue",
+        "swagger_doc_generator_go_gen.cue",
+        "types_go_gen.cue",
+        "types_proto_go_gen.cue",
+    ],
+    ancestor = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test/testdata/myservice:__subpackages__"],
+)

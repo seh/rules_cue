@@ -1,5 +1,0 @@
-load("//cue:cue.bzl", "cue_module")
-
-cue_module(
-    visibility = ["//examples/myservice:__subpackages__"],
-)

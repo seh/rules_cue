@@ -1,0 +1,15 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "cue_resource_library",
+    srcs = [
+        "amount_go_gen.cue",
+        "math_go_gen.cue",
+        "quantity_go_gen.cue",
+    ],
+    ancestor = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test/testdata/myservice:__subpackages__"],
+)

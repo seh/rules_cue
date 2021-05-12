@@ -1,0 +1,33 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_standalone_files",
+)
+
+exports_files([
+    "raw_text-golden.json",
+    "multiple-golden.json",
+])
+
+cue_exported_standalone_files(
+    name = "raw_text",
+    srcs = ["raw.txt"],
+    path = [
+        "top:",
+        "mid:",
+    ],
+    visibility = ["//test:__subpackages__"],
+)
+
+cue_exported_standalone_files(
+    name = "multiple",
+    srcs = [
+        "path.cue",
+        "raw.txt",
+    ],
+    path = [
+        "path.Base(filename)",
+    ],
+    result = "multiple.json",
+    visibility = ["//test:__subpackages__"],
+    with_context = True,
+)

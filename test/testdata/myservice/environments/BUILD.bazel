@@ -1,0 +1,29 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_files",
+)
+
+exports_files([
+    "dev-golden.json",
+    "prod-golden.json",
+])
+
+cue_exported_files(
+    name = "dev",
+    srcs = ["dev.cue"],
+    module = "//test/testdata/myservice/cue.mod",
+    deps = [
+        "//test/testdata/myservice:cue_myservice",
+    ],
+    visibility = ["//test:__subpackages__"],
+)
+
+cue_exported_files(
+    name = "prod",
+    srcs = ["prod.cue"],
+    module = "//test/testdata/myservice/cue.mod",
+    deps = [
+        "//test/testdata/myservice:cue_myservice",
+    ],
+    visibility = ["//test:__subpackages__"],
+)

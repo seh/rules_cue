@@ -1,0 +1,61 @@
+load("cue_test.bzl", "cue_test")
+
+cue_test(
+    name = "hello_world_hello_world",
+    generated_output_file = "//test/testdata/hello_world:hello_world.json",
+)
+
+cue_test(
+    name = "hello_world_message",
+    generated_output_file = "//test/testdata/hello_world:message.txt",
+)
+
+cue_test(
+    name = "hello_world_de",
+    generated_output_file = "//test/testdata/hello_world:de.json",
+)
+
+cue_test(
+    name = "hello_world_en",
+    generated_output_file = "//test/testdata/hello_world:en.json",
+)
+
+cue_test(
+    name = "injection",
+    generated_output_file = "//test/testdata/injection:injection.json",
+)
+
+cue_test(
+    name = "module_greeting",
+    generated_output_file = "//test/testdata/module/greetings/lang/en:greeting.yaml",
+)
+
+cue_test(
+    name = "module_greeting_def",
+    generated_output_file = "//test/testdata/module/greetings/lang/en:greeting_def.cue",
+)
+
+cue_test(
+    name = "my_service_dev",
+    generated_output_file = "//test/testdata/myservice/environments:dev.json",
+)
+
+cue_test(
+    name = "my_service_prod",
+    generated_output_file = "//test/testdata/myservice/environments:prod.json",
+)
+
+cue_test(
+    name = "path_raw_text",
+    generated_output_file = "//test/testdata/path:raw_text.json",
+)
+
+cue_test(
+    name = "path_multiple",
+    generated_output_file = "//test/testdata/path:multiple.json",
+)
+
+cue_test(
+    name = "stamp",
+    generated_output_file = "//test/testdata/stamp:stamp.json",
+)

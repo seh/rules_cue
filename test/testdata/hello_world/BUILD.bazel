@@ -1,0 +1,46 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_files",
+    "cue_exported_instance",
+)
+
+exports_files([
+    "hello_world-golden.json",
+    "message-golden.txt",
+    "de-golden.json",
+    "en-golden.json",
+])
+
+_MODULE = "//test/testdata/hello_world/cue.mod"
+
+cue_exported_files(
+    name = "hello_world",
+    srcs = ["hello_world.cue"],
+    module = _MODULE,
+    visibility = ["//test:__subpackages__"],
+)
+
+cue_exported_files(
+    name = "message",
+    srcs = ["hello_world.cue"],
+    expression = "message",
+    module = _MODULE,
+    output_format = "text",
+    visibility = ["//test:__subpackages__"],
+)
+
+cue_exported_files(
+    name = "de",
+    srcs = ["de.cue"],
+    module = _MODULE,
+    deps = ["//test/testdata/hello_world/lang:cue_de_library"],
+    visibility = ["//test:__subpackages__"],
+)
+
+cue_exported_files(
+    name = "en",
+    srcs = ["en.cue"],
+    module = _MODULE,
+    deps = ["//test/testdata/hello_world/lang:cue_en_library"],
+    visibility = ["//test:__subpackages__"],
+)

@@ -1,0 +1,20 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "cue_v1_library",
+    srcs = [
+        "register_go_gen.cue",
+        "types_go_gen.cue",
+    ],
+    ancestor = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test/testdata/myservice:__subpackages__"],
+    deps = [
+        "//test/testdata/myservice/cue.mod/pkg/k8s.io/api/core/v1:cue_v1_library",
+        "//test/testdata/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/apis/meta/v1:cue_v1_library",
+        "//test/testdata/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/runtime:cue_runtime_library",
+        "//test/testdata/myservice/cue.mod/pkg/k8s.io/apimachinery/pkg/util/intstr:cue_intstr_library",
+    ],
+)

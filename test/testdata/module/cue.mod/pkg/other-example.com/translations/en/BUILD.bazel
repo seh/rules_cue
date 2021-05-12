@@ -1,0 +1,11 @@
+load("//cue:cue.bzl", "cue_instance")
+
+cue_instance(
+    name = "es",
+    package_name = "es",
+    srcs = [
+        "es.cue",
+    ],
+    ancestor = "//test/testdata/module/cue.mod",
+    visibility = ["//test/testdata/module:__subpackages__"],
+)

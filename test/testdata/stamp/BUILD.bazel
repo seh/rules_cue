@@ -1,0 +1,18 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_standalone_files",
+)
+
+exports_files(["stamp-golden.json"])
+
+cue_exported_standalone_files(
+    name = "stamp",
+    srcs = ["stamped.cue"],
+    inject = {
+        "builtat": "{BUILD_TIMESTAMP}",
+        "builtby": "{BUILD_USER}",
+        "message": "Goodbye.",
+    },
+    stamping_policy = "Force",
+    visibility = ["//test:__subpackages__"],
+)
