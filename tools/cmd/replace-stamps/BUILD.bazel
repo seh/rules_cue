@@ -10,5 +10,5 @@ go_library(
 go_binary(
     name = "replace-stamps",
     embed = [":replace_stamps_lib"],
-    visibility = ["//:__subpackages__"],
+    visibility = ["//visibility:public"],
 )

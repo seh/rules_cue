@@ -1,15 +1,11 @@
 load(
-    "@bazel_tools//tools/build_defs/repo:http.bzl",
-    "http_archive",
+    "//cue/private:repositories.bzl",
+    _cue_rules_dependencies = "cue_rules_dependencies",
 )
 load(
-    "@bazel_gazelle//:deps.bzl",
-    "go_repository",
-)
-load(
-    "@bazel_skylib//:workspace.bzl",
-    "bazel_skylib_workspace",
+    "//cue/private:tool.bzl",
+    _cue_register_tool = "cue_register_tool",
 )
 
-def cue_rules_dependencies():
-    bazel_skylib_workspace()
+cue_register_tool = _cue_register_tool
+cue_rules_dependencies = _cue_rules_dependencies
