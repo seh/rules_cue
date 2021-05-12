@@ -7,7 +7,7 @@ load(
     "cue_config",
 )
 
-# gazelle:prefix github.com/tnarg/rules_cue
+# gazelle:prefix github.com/seh/rules_cue
 gazelle(
     name = "gazelle",
 )

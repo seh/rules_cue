@@ -1,4 +1,4 @@
-workspace(name = "com_github_tnarg_rules_cue")
+workspace(name = "com_github_seh_rules_cue")
 
 #
 # Go+Gazelle for Gazelle plugin

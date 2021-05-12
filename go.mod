@@ -1,3 +1,3 @@
-module github.com/tnarg/rules_cue
+module github.com/seh/rules_cue
 
 go 1.15
