@@ -4,6 +4,28 @@ load(
 )
 
 _cue_runtimes = {
+    "0.4.0": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "24717a72b067a4d8f4243b51832f4a627eaa7e32abc4b9117b0af9aa63ae0332",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "a118177d9c605b4fc1a61c15a90fddf57a661136c868dbcaa9d2406c95897949",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "d101a36607981a7652b7961955a84102c912ac35ca9d91de63a0201f2416ecfa",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "13a2db61e78473db0fab0530e8ebf70aa37ed6fb88ee14df240880ec7e70c0f1",
+        },
+    ],
     "0.4.0-rc.1": [
         {
             "os": "Darwin",
@@ -24,28 +46,6 @@ _cue_runtimes = {
             "os": "Windows",
             "arch": "amd64",
             "sha256": "45050f49862169d8153ecea3eb0b92550e83a1bc0f973489881460182371868c",
-        },
-    ],
-    "0.4.0-beta.2": [
-        {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "b9907d8ee02eaf0c66b8a09a103f7861cf797710923be2e3d7da3d35531a2c17",
-        },
-        {
-            "os": "Linux",
-            "arch": "amd64",
-            "sha256": "5e5dde1b57960751c1af0a0e7ea4751566b83d904ba0b1eb6a1b79ddc76574b8",
-        },
-        {
-            "os": "Linux",
-            "arch": "arm64",
-            "sha256": "49cd67a23a51bf1aa4f785365afd666dafedbc144b4458c91edb02ad0785d907",
-        },
-        {
-            "os": "Windows",
-            "arch": "amd64",
-            "sha256": "9feeed6eb1eb71856836344243d5ec2e17ace877ed2b00dae17e7d584a6b2109",
         },
     ],
     "0.3.2": [
@@ -72,7 +72,7 @@ _cue_runtimes = {
     ],
 }
 
-def cue_register_tool(version = "0.4.0-rc.1"):
+def cue_register_tool(version = "0.4.0"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":
