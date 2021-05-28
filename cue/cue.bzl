@@ -442,7 +442,9 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
     # various relative paths that Bazel hands us.
     source_zip_file = _make_zip_archive_of(ctx, files)
     args = ctx.actions.args()
-    if module_directory_path:
+    if module_directory_path != None:
+        if not module_directory_path:
+            module_directory_path = "."
         args.add("-m", module_directory_path)
         if instance_directory_path:
             args.add("-i", instance_directory_path)
@@ -596,7 +598,7 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
     # opposed to returning "." to indicate that it's the same
     # directory.
     relative_instance_path = paths.relativize(instance.directory_path, instance.module.root)
-    if relative_instance_path == instance.directory_path:
+    if relative_instance_path == instance.directory_path and instance.module.root:
         relative_instance_path = "."
     else:
         relative_instance_path = "./" + relative_instance_path
