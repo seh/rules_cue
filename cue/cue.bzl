@@ -41,7 +41,7 @@ def _add_common_output_producing_attrs_to(attrs):
             cfg = "exec",
         ),
         "_cue_config": attr.label(
-            default = "//:cue_config",
+            default = "//cue:cue_config",
         ),
         "_replacer": attr.label(
             default = _replacer_if_stamping,
@@ -314,10 +314,12 @@ def _cue_instance_directory_path(ctx):
     return ctx.label.package
 
 def _cue_instance_impl(ctx):
+    ancestor_instance = None
     if CUEModuleInfo in ctx.attr.ancestor:
         module = ctx.attr.ancestor[CUEModuleInfo]
     else:
-        module = ctx.attr.ancestor[CUEInstanceInfo].module
+        ancestor_instance = ctx.attr.ancestor[CUEInstanceInfo]
+        module = ancestor_instance.module
         for dep in ctx.attr.deps:
             instance = dep[CUEInstanceInfo]
             if instance.module != module:
@@ -334,6 +336,7 @@ def _cue_instance_impl(ctx):
             module.root,
         ))
 
+    direct_instances = ([ancestor_instance] if ancestor_instance else []) + [dep[CUEInstanceInfo] for dep in ctx.attr.deps]
     return [
         CUEInstanceInfo(
             directory_path = instance_directory_path,
@@ -341,8 +344,8 @@ def _cue_instance_impl(ctx):
             module = module,
             package_name = ctx.attr.package_name or paths.basename(instance_directory_path),
             transitive_instances = depset(
-                direct = ctx.attr.deps,
-                transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
+                direct = direct_instances,
+                transitive = [instance.transitive_instances for instance in direct_instances],
             ),
         ),
     ]
@@ -568,12 +571,13 @@ def _make_module_based_output_producing_action(ctx, cue_subcommand, mnemonic, de
     module = ctx.attr.module[CUEModuleInfo]
     files = [module.module_file]
     files.extend(module.external_package_sources.to_list())
+    direct_instances = [dep[CUEInstanceInfo] for dep in ctx.attr.deps]
     deps = depset(
-        direct = ctx.attr.deps,
-        transitive = [dep[CUEInstanceInfo].transitive_instances for dep in ctx.attr.deps],
+        direct = direct_instances,
+        transitive = [instance.transitive_instances for instance in direct_instances],
     )
-    for dep in deps.to_list():
-        files.extend(dep[CUEInstanceInfo].files)
+    for instance in deps.to_list():
+        files.extend(instance.files)
 
     _make_output_producing_action(
         ctx,
@@ -590,8 +594,8 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
     files = list(instance.files)
     files.append(instance.module.module_file)
     files.extend(instance.module.external_package_sources.to_list())
-    for dep in instance.transitive_instances.to_list():
-        files.extend(dep[CUEInstanceInfo].files)
+    for inst in instance.transitive_instances.to_list():
+        files.extend(inst.files)
 
     # NB: If the input path is equal to the starting path, the
     # "paths.relativize" function returns the input path unchanged, as

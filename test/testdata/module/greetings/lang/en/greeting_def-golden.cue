@@ -6,4 +6,6 @@ import (
 )
 
 let native_word = "hello"
-greeting: "\(strings.ToTitle(native_word)) or, if you prefer, \(es[native_word])!"
+greeting: strings.MinRunes(1) & "\(strings.ToTitle(native_word)) or, if you prefer, \(es[native_word])!" & {
+	string
+}
