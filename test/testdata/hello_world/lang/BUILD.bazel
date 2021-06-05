@@ -1,9 +1,9 @@
-package(default_visibility = ["//test/testdata/hello_world:__subpackages__"])
-
 load(
     "//cue:cue.bzl",
     "cue_instance",
 )
+
+package(default_visibility = ["//test/testdata/hello_world:__subpackages__"])
 
 ANCESTOR = "//test/testdata/hello_world/cue.mod"
 

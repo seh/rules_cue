@@ -1,6 +1,20 @@
+load(
+    "//cue/private:config.bzl",
+    "cue_config",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(glob(["*.bzl"]))
+
+cue_config(
+    name = "cue_config",
+    stamp = select({
+        "//cue/private:stamp": True,
+        "//conditions:default": False,
+    }),
+    visibility = ["//visibility:public"],
+)
 
 config_setting(
     name = "darwin_x86_64",

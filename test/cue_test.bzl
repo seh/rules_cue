@@ -1,8 +1,4 @@
 load(
-    "//cue:cue.bzl",
-    "cue_instance",
-)
-load(
     "@bazel_skylib//lib:paths.bzl",
     "paths",
 )

@@ -12,18 +12,18 @@ cue_exported_files(
     name = "dev",
     srcs = ["dev.cue"],
     module = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test:__subpackages__"],
     deps = [
         "//test/testdata/myservice:cue_myservice",
     ],
-    visibility = ["//test:__subpackages__"],
 )
 
 cue_exported_files(
     name = "prod",
     srcs = ["prod.cue"],
     module = "//test/testdata/myservice/cue.mod",
+    visibility = ["//test:__subpackages__"],
     deps = [
         "//test/testdata/myservice:cue_myservice",
     ],
-    visibility = ["//test:__subpackages__"],
 )

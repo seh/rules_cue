@@ -1,7 +1,6 @@
 load(
     "//cue:cue.bzl",
     "cue_exported_files",
-    "cue_exported_instance",
 )
 
 exports_files([
@@ -33,14 +32,14 @@ cue_exported_files(
     name = "de",
     srcs = ["de.cue"],
     module = _MODULE,
-    deps = ["//test/testdata/hello_world/lang:cue_de_library"],
     visibility = ["//test:__subpackages__"],
+    deps = ["//test/testdata/hello_world/lang:cue_de_library"],
 )
 
 cue_exported_files(
     name = "en",
     srcs = ["en.cue"],
     module = _MODULE,
-    deps = ["//test/testdata/hello_world/lang:cue_en_library"],
     visibility = ["//test:__subpackages__"],
+    deps = ["//test/testdata/hello_world/lang:cue_en_library"],
 )
