@@ -80,6 +80,6 @@ def cue_register_tool(version = "0.4.0"):
         http_archive(
             name = "cue_runtime_%s_%s" % (platform["os"].lower(), platform["arch"]),
             build_file_content = """exports_files(["cue"], visibility = ["//visibility:public"])""",
-            url = "https://github.com/cuelang/cue/releases/download/v%s/cue_v%s_%s_%s.%s" % (version, version, platform["os"].lower(), platform["arch"], suffix),
+            url = "https://github.com/cue-lang/cue/releases/download/v%s/cue_v%s_%s_%s.%s" % (version, version, platform["os"].lower(), platform["arch"], suffix),
             sha256 = platform["sha256"],
         )
