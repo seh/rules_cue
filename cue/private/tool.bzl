@@ -4,6 +4,38 @@ load(
 )
 
 _cue_runtimes = {
+    "0.4.1": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "9904f316160803cb011b7ed7524626719741a609623fe89abf149ab7522acffd",
+        },
+        {
+            "os": "Darwin",
+            "arch": "arm64",
+            "sha256": "ff47c8e52a82aa3cf5d02647a6422dd9e824c5210607655a6c8abe700eae56d1",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "d3f1df656101a498237d0a8b168a22253dde11f6b6b8cc577508b13a112142de",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "e0d63e0df5231687acfd6da09bd672b5b11008a4cfa1927046ec9802864280e6",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "5bfb9934b71878633691dc0b373214105361491effa28461abb336c338c41176",
+        },
+        {
+            "os": "Windows",
+            "arch": "arm64",
+            "sha256": "1b9b7ddf17ec59447147e8199207bf3e3311f242d7b745ea317679f01782779a",
+        },
+    ],
     "0.4.0": [
         {
             "os": "Darwin",
@@ -26,53 +58,9 @@ _cue_runtimes = {
             "sha256": "13a2db61e78473db0fab0530e8ebf70aa37ed6fb88ee14df240880ec7e70c0f1",
         },
     ],
-    "0.4.0-rc.1": [
-        {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "702ff6c6e04df5cf757512faa28ad0ee3bbd1992dcd315a5504c0c6600d8aa3a",
-        },
-        {
-            "os": "Linux",
-            "arch": "amd64",
-            "sha256": "a96f8dc767e83fa865a42d1ab5fbe604046f4b77c0c261def228f4ead556120b",
-        },
-        {
-            "os": "Linux",
-            "arch": "arm64",
-            "sha256": "55b30333e44177fc40004ef67411b7743997ca973b968ee6d7a573f7500daf76",
-        },
-        {
-            "os": "Windows",
-            "arch": "amd64",
-            "sha256": "45050f49862169d8153ecea3eb0b92550e83a1bc0f973489881460182371868c",
-        },
-    ],
-    "0.3.2": [
-        {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "b9a3fb15f9c52ce3d83c3696a675463b3cf203f75d94467378bf4987826396cd",
-        },
-        {
-            "os": "Linux",
-            "arch": "amd64",
-            "sha256": "c80da4c9439e633e293fcebf840d082048cb0a79faa61aa55e6edf13d8e7d4d5",
-        },
-        {
-            "os": "Linux",
-            "arch": "arm64",
-            "sha256": "a4f900c4640f67b49a55769adc9da1943193ce196181072d1f28e79e6ee48a32",
-        },
-        {
-            "os": "Windows",
-            "arch": "amd64",
-            "sha256": "3ee17ebb1a2565c16cdd3a66a165b70e8f47d5e86f230455dc629c9d0ce6a8c8",
-        },
-    ],
 }
 
-def cue_register_tool(version = "0.4.0"):
+def cue_register_tool(version = "0.4.1"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":
