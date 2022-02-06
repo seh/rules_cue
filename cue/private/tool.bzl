@@ -4,6 +4,38 @@ load(
 )
 
 _cue_runtimes = {
+    "0.4.2": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "3da1576d36950c64acb7d7a7b80f34e5935ac76b9ff607517981eef44a88a31b",
+        },
+        {
+            "os": "Darwin",
+            "arch": "arm64",
+            "sha256": "21fcfbe52beff7bae510bb6267fe33a5785039bd7d5f32e3c3222c55580dd85c",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "d43cf77e54f42619d270b8e4c1836aec87304daf243449c503251e6943f7466a",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "6515c1f1b6fc09d083be533019416b28abd91e5cdd8ef53cd0719a4b4b0cd1c7",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "95be4cd6b04b6c729f4f85a551280378d8939773c2eaecd79c70f907b5cae847",
+        },
+        {
+            "os": "Windows",
+            "arch": "arm64",
+            "sha256": "e03325656ca20d464307f68e3070d774af37e5777156ae983e166d7d7aed60df",
+        },
+    ],
     "0.4.1": [
         {
             "os": "Darwin",
@@ -36,31 +68,9 @@ _cue_runtimes = {
             "sha256": "1b9b7ddf17ec59447147e8199207bf3e3311f242d7b745ea317679f01782779a",
         },
     ],
-    "0.4.0": [
-        {
-            "os": "Darwin",
-            "arch": "amd64",
-            "sha256": "24717a72b067a4d8f4243b51832f4a627eaa7e32abc4b9117b0af9aa63ae0332",
-        },
-        {
-            "os": "Linux",
-            "arch": "amd64",
-            "sha256": "a118177d9c605b4fc1a61c15a90fddf57a661136c868dbcaa9d2406c95897949",
-        },
-        {
-            "os": "Linux",
-            "arch": "arm64",
-            "sha256": "d101a36607981a7652b7961955a84102c912ac35ca9d91de63a0201f2416ecfa",
-        },
-        {
-            "os": "Windows",
-            "arch": "amd64",
-            "sha256": "13a2db61e78473db0fab0530e8ebf70aa37ed6fb88ee14df240880ec7e70c0f1",
-        },
-    ],
 }
 
-def cue_register_tool(version = "0.4.1"):
+def cue_register_tool(version = "0.4.2"):
     for platform in _cue_runtimes[version]:
         suffix = "tar.gz"
         if platform["os"] == "Windows":
