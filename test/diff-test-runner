@@ -8,7 +8,7 @@ actual_file=$1
 golden_file=$2
 
 # NB: diff fails when there's a difference to report.
-diff_output="$(diff ${golden_file} ${actual_file})" || :
+diff_output="$(diff -w ${golden_file} ${actual_file})" || :
 if [ -n "${diff_output}" ]; then
   echo "FAIL: Actual output differs from expected golden content:"
   echo "${diff_output}"

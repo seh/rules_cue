@@ -10,7 +10,6 @@ cue_exported_standalone_files(
     srcs = ["stamped.cue"],
     inject = {
         "builtat": "{BUILD_TIMESTAMP}",
-        "builtby": "{BUILD_USER}",
         "message": "Goodbye.",
     },
     stamping_policy = "Force",
