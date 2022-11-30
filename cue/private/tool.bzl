@@ -4,6 +4,38 @@ load(
 )
 
 _cue_runtimes = {
+    "0.5.0-beta.2": [
+        {
+            "os": "Darwin",
+            "arch": "amd64",
+            "sha256": "8c448a45fd06134952a5600bd59dad6cb2bb10e6ddb5d903e929daafaf362368",
+        },
+        {
+            "os": "Darwin",
+            "arch": "arm64",
+            "sha256": "aab292f5d8ac666b0e7c8e02074ec62202bd01139d7d3149ccb1ab5dc7371e93",
+        },
+        {
+            "os": "Linux",
+            "arch": "amd64",
+            "sha256": "a1abeacba426b108ff74625e8c97308675898069b8022083d38550ebaf31bbfa",
+        },
+        {
+            "os": "Linux",
+            "arch": "arm64",
+            "sha256": "1da6fd5abc2cf5a2587e77d3680d654265a289daca34524ee46b5e2a5d2d8876",
+        },
+        {
+            "os": "Windows",
+            "arch": "amd64",
+            "sha256": "b08aa1485d6394c15bd712791c18be6fbc0155c3febf80eb6eb26d54d83196c9",
+        },
+        {
+            "os": "Windows",
+            "arch": "arm64",
+            "sha256": "4c8e9ac16e0eb01c840ac104b5e0a7ebc207e324a341e2dd4f18e98b198e0e81",
+        },
+    ],
     "0.5.0-beta.1": [
         {
             "os": "Darwin",
