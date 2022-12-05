@@ -8,32 +8,32 @@ _cue_runtimes = {
         {
             "os": "Darwin",
             "arch": "amd64",
-            "sha256": "8c448a45fd06134952a5600bd59dad6cb2bb10e6ddb5d903e929daafaf362368",
+            "sha256": "3e09097396c513795fcfe58adeb648cc860091ce72a14404b5c5594c1e4b063f",
         },
         {
             "os": "Darwin",
             "arch": "arm64",
-            "sha256": "aab292f5d8ac666b0e7c8e02074ec62202bd01139d7d3149ccb1ab5dc7371e93",
+            "sha256": "d0f0e27f4086e283de52acf3367c3a3671843f3dae9b1fc42d54c5311d529fc0",
         },
         {
             "os": "Linux",
             "arch": "amd64",
-            "sha256": "a1abeacba426b108ff74625e8c97308675898069b8022083d38550ebaf31bbfa",
+            "sha256": "2442309d506008061414f13625633370b904cd0b2a4e4b157f33d3b773584640",
         },
         {
             "os": "Linux",
             "arch": "arm64",
-            "sha256": "1da6fd5abc2cf5a2587e77d3680d654265a289daca34524ee46b5e2a5d2d8876",
+            "sha256": "de7d476a3775aa860a991edf1a7cef4cb223b28e15145ec62afb00c0ee569c1c",
         },
         {
             "os": "Windows",
             "arch": "amd64",
-            "sha256": "b08aa1485d6394c15bd712791c18be6fbc0155c3febf80eb6eb26d54d83196c9",
+            "sha256": "7aa4fad5cdc97c78dacc5ee294c6f5faaf057d870b495ef91fb0e3b80c529931",
         },
         {
             "os": "Windows",
             "arch": "arm64",
-            "sha256": "4c8e9ac16e0eb01c840ac104b5e0a7ebc207e324a341e2dd4f18e98b198e0e81",
+            "sha256": "716a0a6bbf4e086a2defc9ecbe2d95f1f7f01888265e9cc5763b50043d827245",
         },
     ],
     "0.5.0-beta.1": [
