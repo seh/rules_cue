@@ -635,6 +635,10 @@ def _add_common_consolidated_output_attrs_to(attrs):
                 "yaml",
             ],
         ),
+        "package_name": attr.string(
+            doc = "Package Name for non-CUE files"
+            default = "",
+        ),
         "result": attr.output(
             doc = """The built result in the format specified in the "output_format" attribute.""",
             mandatory = True,
