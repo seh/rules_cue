@@ -636,7 +636,7 @@ def _add_common_consolidated_output_attrs_to(attrs):
             ],
         ),
         "package_name": attr.string(
-            doc = "Package Name for non-CUE files"
+            doc = "Package Name for non-CUE files",
             default = "",
         ),
         "result": attr.output(
