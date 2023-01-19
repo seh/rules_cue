@@ -637,7 +637,7 @@ def _add_common_consolidated_output_attrs_to(attrs):
         ),
         "package_name": attr.string(
             doc = "Package Name for non-CUE files",
-            default = "",
+            default = None,
         ),
         "result": attr.output(
             doc = """The built result in the format specified in the "output_format" attribute.""",
@@ -751,6 +751,7 @@ def _cue_exported_standalone_files_impl(ctx):
         "CUEExport",
         "exported",
         _augment_exported_output_args,
+	instance_package_name = ctx.attr.package_name or None
     )
 
 _cue_exported_standalone_files = rule(
