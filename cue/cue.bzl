@@ -622,7 +622,6 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
 def _augment_consolidated_output_args(ctx, args):
     args.add("--out", ctx.attr.output_format)
     args.add("-p", ctx.attr.package_name)
-    args.add("--path", ctx.attr.path_expression)
 
 def _add_common_consolidated_output_attrs_to(attrs):
     attrs.update({
@@ -639,10 +638,6 @@ def _add_common_consolidated_output_attrs_to(attrs):
         ),
         "package_name": attr.string(
             doc = "Package Name for non-CUE files",
-            default = "",
-        ),
-        "path_expression": attr.string(
-            doc = "CUE expression for single path component",
             default = "",
         ),
         "result": attr.output(
