@@ -1,0 +1,45 @@
+name: Continuous Integration
+on:
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows.
+  push:
+    branches:
+    - main
+    tags:
+    - v*
+  pull_request:
+jobs:
+  bazel-source-inspection:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out VCS repository
+      uses: actions/checkout@v2
+    - name: Confirm Bazel files is formatted per "buildifier"
+      uses: thompsonja/bazel-buildifier@v0.4.0
+      with:
+        # See https://github.com/bazelbuild/buildtools/blob/master/WARNINGS.md.
+        warnings: -function-docstring,-module-docstring
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Cache bazel-related artifacts
+      uses: actions/cache@v3
+      env:
+        cache-name: bazel-cache
+      with:
+        path: |
+          ~/.cache/bazelisk
+          ~/.cache/bazel
+        key: ${{ runner.os }}-${{ env.cache-name }}
+    - name: Check out VCS repository
+      uses: actions/checkout@v3
+    - name: Build all Bazel targets
+      run: |
+        bazel build \
+          --enable_bzlmod \
+          //...
+    - name: Test all Bazel targets
+      run: |
+        bazel test \
+          --enable_bzlmod \
+          --test_output=errors \
+          //...

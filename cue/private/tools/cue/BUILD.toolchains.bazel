@@ -1,0 +1,9 @@
+load(
+    "{containing_package_prefix}:toolchain.bzl",
+    "declare_bazel_toolchains",
+)
+
+declare_bazel_toolchains(
+    toolchain_prefix = "@{tool_repo}//",
+    version = "{version}",
+)

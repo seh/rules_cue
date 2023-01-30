@@ -34,12 +34,6 @@ def _replacer_if_stamping(stamping_policy):
 
 def _add_common_output_producing_attrs_to(attrs):
     attrs.update({
-        "_cue": attr.label(
-            default = "//cue:cue_runtime",
-            executable = True,
-            allow_single_file = True,
-            cfg = "exec",
-        ),
         "_cue_config": attr.label(
             default = "//cue:cue_config",
         ),
@@ -418,9 +412,12 @@ def _make_zip_archive_of(ctx, files):
     )
     return source_zip_file
 
+_cue_toolchain_type = "//tools/cue:toolchain_type"
+
 def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, dependency_files = [], module_directory_path = None, instance_directory_path = None, instance_package_name = None):
+    cue_tool = ctx.toolchains[_cue_toolchain_type].cueinfo.tool
     files = list(ctx.files.srcs)
-    for k, v in ctx.attr.qualified_srcs.items():
+    for k, _ in ctx.attr.qualified_srcs.items():
         file = _file_from_label_keyed_string_dict_key(k)
         if file not in files:
             files.append(file)
@@ -457,7 +454,7 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
         fail(msg = "CUE instance directory path provided without a module directory path")
     elif instance_package_name:
         fail(msg = "CUE package name provided without an instance directory path")
-    args.add(ctx.executable._cue.path)
+    args.add(cue_tool.path)
     args.add(cue_subcommand)
     args.add(source_zip_file.path)
     stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
@@ -476,7 +473,7 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
             stamped_args_file,
             packageless_files_file,
         ],
-        tools = [ctx.executable._cue],
+        tools = [cue_tool],
         outputs = [ctx.outputs.result],
         # NB: See https://stackoverflow.com/questions/7577052 for the
         # odd treatment of the "packageless_file_args" array variable
@@ -670,6 +667,7 @@ def _cue_consolidated_standalone_files_impl(ctx):
 _cue_consolidated_standalone_files = rule(
     implementation = _cue_consolidated_standalone_files_impl,
     attrs = _add_common_consolidated_output_attrs_to(_add_common_output_producing_attrs_to({})),
+    toolchains = [_cue_toolchain_type],
 )
 
 def cue_consolidated_standalone_files(name, **kwargs):
@@ -681,6 +679,7 @@ def _cue_consolidated_files_impl(ctx):
 _cue_consolidated_files = rule(
     implementation = _cue_consolidated_files_impl,
     attrs = _add_common_consolidated_output_attrs_to(_add_common_module_based_attrs_to({})),
+    toolchains = [_cue_toolchain_type],
 )
 
 def cue_consolidated_files(name, **kwargs):
@@ -692,6 +691,7 @@ def _cue_consolidated_instance_impl(ctx):
 _cue_consolidated_instance = rule(
     implementation = _cue_consolidated_instance_impl,
     attrs = _add_common_consolidated_output_attrs_to(_add_common_instance_consuming_attrs_to({})),
+    toolchains = [_cue_toolchain_type],
 )
 
 def cue_consolidated_instance(name, **kwargs):
@@ -752,6 +752,7 @@ def _cue_exported_standalone_files_impl(ctx):
 _cue_exported_standalone_files = rule(
     implementation = _cue_exported_standalone_files_impl,
     attrs = _add_common_exported_output_attrs_to(_add_common_output_producing_attrs_to({})),
+    toolchains = [_cue_toolchain_type],
 )
 
 def cue_exported_standalone_files(name, **kwargs):
@@ -763,6 +764,7 @@ def _cue_exported_files_impl(ctx):
 _cue_exported_files = rule(
     implementation = _cue_exported_files_impl,
     attrs = _add_common_exported_output_attrs_to(_add_common_module_based_attrs_to({})),
+    toolchains = [_cue_toolchain_type],
 )
 
 def cue_exported_files(name, **kwargs):
@@ -774,6 +776,7 @@ def _cue_exported_instance_impl(ctx):
 _cue_exported_instance = rule(
     implementation = _cue_exported_instance_impl,
     attrs = _add_common_exported_output_attrs_to(_add_common_instance_consuming_attrs_to({})),
+    toolchains = [_cue_toolchain_type],
 )
 
 def cue_exported_instance(name, **kwargs):

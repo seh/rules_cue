@@ -1,0 +1,4 @@
+constraint_setting(
+    name = "tool_version",
+    visibility = ["//visibility:public"],
+)
