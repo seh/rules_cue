@@ -3,9 +3,10 @@ load(
     "cue_config",
 )
 
-package(default_visibility = ["//visibility:public"])
-
-exports_files(glob(["*.bzl"]))
+exports_files([
+    "cue-run-from-archived-runfiles",
+    "cue-run-from-runfiles",
+])
 
 cue_config(
     name = "cue_config",
@@ -14,46 +15,4 @@ cue_config(
         "//conditions:default": False,
     }),
     visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "darwin_x86_64",
-    values = {
-        "cpu": "darwin",
-    },
-)
-
-config_setting(
-    name = "linux_x86_64",
-    values = {
-        "cpu": "k8",
-    },
-)
-
-config_setting(
-    name = "linux_aarch64",
-    values = {
-        "cpu": "arm64",
-    },
-)
-
-config_setting(
-    name = "windows_x86_64",
-    values = {
-        "cpu": "x64_windows",
-    },
-)
-
-genrule(
-    name = "cue_runtime",
-    srcs = select({
-        "//cue:darwin_x86_64": ["@cue_runtime_darwin_amd64//:cue"],
-        "//cue:linux_aarch64": ["@cue_runtime_linux_arm64//:cue"],
-        "//cue:linux_x86_64": ["@cue_runtime_linux_amd64//:cue"],
-        "//cue:windows_x86_64": ["@cue_runtime_windows_amd64//:cue"],
-    }),
-    outs = ["bin/cue"],
-    cmd = "cp $(<) $(@)",
-    executable = True,
-    output_to_bindir = 1,
 )

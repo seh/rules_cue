@@ -3,6 +3,10 @@ load(
     "CUEConfigInfo",
 )
 load(
+    "//cue/private:future.bzl",
+    _runfile_path = "runfile_path",
+)
+load(
     "@bazel_skylib//lib:paths.bzl",
     "paths",
 )
@@ -11,7 +15,6 @@ CUEModuleInfo = provider(
     doc = "Collects files from cue_module targets for use by referring cue_instance targets.",
     fields = {
         "module_file": """The "module.cue" file in the module directory.""",
-        "root": """The directory containing the "cue.mod" directory immediately containing the module file defining this CUE module.""",
         # TODO(seh): Consider abandoning this field in favor of using cue_instance for these.
         "external_package_sources": "The set of files in this CUE module defining external packages.",
     },
@@ -24,7 +27,7 @@ CUEInstanceInfo = provider(
         "files": "The CUE files defining this instance.",
         "module": "The CUE module within which this instance sits.",
         "package_name": "Name of the CUE package to load for this instance.",
-        "transitive_instances": "The set of instances referenced by this instance.",
+        "transitive_files": "The set of files (including other instances) referenced by this instance.",
     },
 )
 
@@ -32,23 +35,8 @@ def _replacer_if_stamping(stamping_policy):
     # NB: We can't access the "_cue_config" attribute here.
     return Label("//tools/cmd/replace-stamps") if stamping_policy != "Never" else None
 
-def _add_common_output_producing_attrs_to(attrs):
+def _add_common_source_consuming_attrs_to(attrs):
     attrs.update({
-        "_cue_config": attr.label(
-            default = "//cue:cue_config",
-        ),
-        "_replacer": attr.label(
-            default = _replacer_if_stamping,
-            executable = True,
-            allow_single_file = True,
-            cfg = "exec",
-        ),
-        "_zipper": attr.label(
-            default = Label("@bazel_tools//tools/zip:zipper"),
-            executable = True,
-            allow_single_file = True,
-            cfg = "exec",
-        ),
         "qualified_srcs": attr.label_keyed_string_dict(
             doc = """Additional input files that are not part of a CUE package, each together with a qualifier.
 
@@ -60,6 +48,30 @@ character.""",
         "srcs": attr.label_list(
             doc = "Additional input files that are not part of a CUE package.",
             allow_files = True,
+        ),
+    })
+    return attrs
+
+def _add_common_output_producing_attrs_to(attrs):
+    attrs = _add_common_source_consuming_attrs_to(attrs)
+    attrs.update({
+        "_cue_config": attr.label(
+            default = "//cue:cue_config",
+        ),
+        "_replacer": attr.label(
+            default = _replacer_if_stamping,
+            executable = True,
+            allow_single_file = True,
+            cfg = "exec",
+        ),
+        # Unfortunately, we can't use a private attribute for an
+        # implicit dependency here, because we can't fix the default
+        # label value.
+        "cue_run": attr.label(
+            executable = True,
+            allow_files = True,
+            cfg = "exec",
+            mandatory = True,
         ),
         "expression": attr.string(
             doc = "CUE expression selecting a single value to export.",
@@ -159,11 +171,8 @@ def _file_from_label_keyed_string_dict_key(k):
         fail(msg = "Unexpected number of files in target {}: {}".format(k, len(files)))
     return files[0]
 
-def _file_path_in_zip_archive(file):
-    return file.short_path
-
-def _collect_packageless_file_path(file, lines):
-    p = _file_path_in_zip_archive(file)
+def _collect_packageless_file_path(ctx, file, lines):
+    p = _runfile_path(ctx, file)
     if p.find(":") != -1:
         fail(msg = "CUE rejects file paths that contain a colon (:): {}".format(p))
     lines.append(p + "\n")
@@ -235,23 +244,19 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
             progress_message = "Replacing injection placeholders with stamped values for {}".format(ctx.label.name),
         )
 
-    # NB: We need to be able to map these source file paths from
-    # relative paths to absolute paths, or at least adjust them to be
-    # relative to whichever working directory within the CUE module we
-    # choose.
     lines = []
     srcs = list(ctx.files.srcs)
+    for src in srcs:
+        _collect_packageless_file_path(ctx, src, lines)
     for k, v in ctx.attr.qualified_srcs.items():
         file = _file_from_label_keyed_string_dict_key(k)
         if file in srcs:
             srcs.remove(file)
         if not v:
-            _collect_packageless_file_path(file, lines)
+            _collect_packageless_file_path(ctx, file, lines)
             continue
         lines.append(v + ":")
-        _collect_packageless_file_path(file, lines)
-    for src in srcs:
-        _collect_packageless_file_path(src, lines)
+        _collect_packageless_file_path(ctx, file, lines)
     ctx.actions.write(
         packageless_files_file,
         "\n".join(lines),
@@ -269,8 +274,7 @@ def _cue_module_impl(ctx):
         fail(msg = """supplied CUE module directory is not named "{}"; got "{}" instead""".format(expected_module_directory, directory))
     return [
         CUEModuleInfo(
-            module_file = ctx.file.file,
-            root = paths.dirname(module_file.dirname),
+            module_file = module_file,
             external_package_sources = depset(
                 direct = ctx.files.srcs,
             ),
@@ -304,7 +308,7 @@ def cue_module(name = "cue.mod", **kwargs):
 def _cue_instance_directory_path(ctx):
     if ctx.file.directory_of:
         f = ctx.file.directory_of
-        return f.short_path if f.is_directory else f.dirname
+        return f.path if f.is_directory else f.dirname
     return ctx.label.package
 
 def _cue_instance_impl(ctx):
@@ -320,26 +324,30 @@ def _cue_instance_impl(ctx):
                 fail(msg = """dependency {} of instance {} is not part of CUE module "{}"; got "{}" instead""".format(dep, ctx.label, module, dep.module))
 
     instance_directory_path = _cue_instance_directory_path(ctx)
-    if not (instance_directory_path == module.root or
+    module_root_directory = paths.dirname(module.module_file.dirname)
+    if not (instance_directory_path == module_root_directory or
             # The CUE module may be at the root of the Bazel workspace.
-            not module.root or
-            instance_directory_path.startswith(module.root + "/")):
+            not module_root_directory or
+            instance_directory_path.startswith(module_root_directory + "/")):
         fail(msg = "directory {} for instance {} is not dominated by the module root directory {}".format(
             instance_directory_path,
             ctx.label,
-            module.root,
+            module_root_directory,
         ))
-
-    direct_instances = ([ancestor_instance] if ancestor_instance else []) + [dep[CUEInstanceInfo] for dep in ctx.attr.deps]
     return [
         CUEInstanceInfo(
             directory_path = instance_directory_path,
             files = ctx.files.srcs,
             module = module,
             package_name = ctx.attr.package_name or paths.basename(instance_directory_path),
-            transitive_instances = depset(
-                direct = direct_instances,
-                transitive = [instance.transitive_instances for instance in direct_instances],
+            transitive_files = depset(
+                direct = ctx.files.srcs +
+                         ([module.module_file] if not ancestor_instance else []),
+                transitive = [instance.transitive_files for instance in (
+                                 [dep[CUEInstanceInfo] for dep in ctx.attr.deps] +
+                                 ([ancestor_instance] if ancestor_instance else [])
+                             )] +
+                             ([module.external_package_sources] if not ancestor_instance else []),
             ),
         ),
     ]
@@ -390,62 +398,103 @@ the CUE pacakge name.""",
     },
 )
 
-def _make_zip_archive_of(ctx, files):
-    zip_manifest_file = ctx.actions.declare_file("{}-manifest".format(ctx.label.name))
-    ctx.actions.write(
-        zip_manifest_file,
-        "".join(["{}={}\n".format(_file_path_in_zip_archive(f), f.path) for f in files]),
+def _call_rule_after(name, rule_fn, prepare_fns = [], **kwargs):
+    for f in prepare_fns:
+        kwargs = f(
+            name = name,
+            **kwargs
+        )
+    rule_fn(
+        name = name,
+        **kwargs
     )
-    source_zip_file = ctx.actions.declare_file(ctx.label.name + ".zip")
 
-    args = ctx.actions.args()
-    args.add("c")
-    args.add(source_zip_file.path)
-    args.add("@" + zip_manifest_file.path)
-    ctx.actions.run(
-        executable = ctx.executable._zipper,
-        arguments = [args],
-        inputs = files + [zip_manifest_file],
-        outputs = [source_zip_file],
-        mnemonic = "CUECollectSourceZIPFile",
-        progress_message = "Collecting source files from CUE module for instance \"{}\"".format(ctx.label.name),
-    )
-    return source_zip_file
-
-_cue_toolchain_type = "//tools/cue:toolchain_type"
-
-def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, dependency_files = [], module_directory_path = None, instance_directory_path = None, instance_package_name = None):
-    cue_tool = ctx.toolchains[_cue_toolchain_type].cueinfo.tool
+def _collect_direct_file_sources(ctx):
     files = list(ctx.files.srcs)
     for k, _ in ctx.attr.qualified_srcs.items():
         file = _file_from_label_keyed_string_dict_key(k)
         if file not in files:
             files.append(file)
-    if dependency_files:
-        files.extend(dependency_files)
+    return files
 
-    # NB: CUE needs all the source files within the module to sit
-    # within the directory that contains the "cue.mod"
-    # directory. Bazel splits the static source files from the
-    # generated files, and won't present them in a combined directory
-    # tree. Creating symbolic links from generated files to the static
-    # files or vice versa is difficult, because Bazel actions can only
-    # create actions in the target's package.
-    #
-    # To work around these limitations, we collect all the source
-    # files—both static and generated—into a ZIP archive, then expand
-    # that archive in the root directory of a new action.
-    #
-    # One more difficulty arises: CUE requires that its current
-    # working directory be within the module's directory tree. We have
-    # to change into a directory within that tree, and adjust the
-    # various relative paths that Bazel hands us.
-    source_zip_file = _make_zip_archive_of(ctx, files)
+def _cue_standalone_runfiles_impl(ctx):
+    return [
+        DefaultInfo(runfiles = ctx.runfiles(
+            files = _collect_direct_file_sources(ctx),
+        )),
+    ]
+
+_cue_standalone_runfiles = rule(
+    implementation = _cue_standalone_runfiles_impl,
+    attrs = _add_common_source_consuming_attrs_to({}),
+)
+
+def _cue_module_runfiles_impl(ctx):
+    module = ctx.attr.module[CUEModuleInfo]
+    return [
+        DefaultInfo(runfiles = ctx.runfiles(
+            files = [module.module_file] +
+                    _collect_direct_file_sources(ctx),
+            transitive_files = depset(
+                transitive = [module.external_package_sources] +
+                             [dep[CUEInstanceInfo].transitive_files for dep in ctx.attr.deps],
+            ),
+        )),
+    ]
+
+_cue_module_runfiles = rule(
+    implementation = _cue_module_runfiles_impl,
+    attrs = _add_common_source_consuming_attrs_to({
+        "deps": attr.label_list(
+            doc = """cue_instance targets to include in the evaluation.
+
+These instances are those mentioned in import declarations in this set
+of CUE files.""",
+            providers = [CUEInstanceInfo],
+        ),
+        "module": attr.label(
+            doc = """CUE module within which these files sit.
+
+This value must refer either to a target using the cue_module rule or
+another rule that yields a CUEModuleInfo provider.""",
+            providers = [CUEModuleInfo],
+            mandatory = True,
+        ),
+    }),
+)
+
+def _cue_instance_runfiles_impl(ctx):
+    instance = ctx.attr.instance[CUEInstanceInfo]
+    return [
+        DefaultInfo(runfiles = ctx.runfiles(
+            files = _collect_direct_file_sources(ctx),
+            transitive_files = depset(
+                transitive = [instance.transitive_files],
+            ),
+        )),
+    ]
+
+_cue_instance_runfiles = rule(
+    implementation = _cue_instance_runfiles_impl,
+    attrs = _add_common_source_consuming_attrs_to({
+        "instance": attr.label(
+            doc = """CUE instance to export.
+ 
+This value must refer either to a target using the cue_instance rule
+or another rule that yields a CUEInstanceInfo provider.""",
+            providers = [CUEInstanceInfo],
+            mandatory = True,
+        ),
+    }),
+)
+
+_cue_toolchain_type = "//tools/cue:toolchain_type"
+
+def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, module_file = None, instance_directory_path = None, instance_package_name = None):
+    cue_tool = ctx.toolchains[_cue_toolchain_type].cueinfo.tool
     args = ctx.actions.args()
-    if module_directory_path != None:
-        if not module_directory_path:
-            module_directory_path = "."
-        args.add("-m", module_directory_path)
+    if module_file != None:
+        args.add("-m", _runfile_path(ctx, module_file))
         if instance_directory_path:
             args.add("-i", instance_directory_path)
             if instance_package_name:
@@ -456,7 +505,6 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
         fail(msg = "CUE package name provided without an instance directory path")
     args.add(cue_tool.path)
     args.add(cue_subcommand)
-    args.add(source_zip_file.path)
     stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
     args.add(stamped_args_file.path)
     packageless_files_file = ctx.actions.declare_file("%s-packageless-files" % ctx.label.name)
@@ -467,139 +515,40 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
     if augment_args:
         augment_args(ctx, args)
 
-    ctx.actions.run_shell(
+    ctx.actions.run(
+        executable = ctx.executable.cue_run,
+        arguments = [args],
         inputs = [
-            source_zip_file,
             stamped_args_file,
             packageless_files_file,
         ],
         tools = [cue_tool],
         outputs = [ctx.outputs.result],
-        # NB: See https://stackoverflow.com/questions/7577052 for the
-        # odd treatment of the "packageless_file_args" array variable
-        # in this script, handling the case where the array winds up
-        # empty for lack of so-called "packageless files" being used
-        # as input. As we are uncertain of which Bash we'll wind up
-        # using, aim to work around as many of their mutually
-        # exclusive defects as possible.
-        command = """\
-set -e -u -o pipefail
-
-function usage() {
-  printf "usage: %s [-i instance_path] [-m module_path] [-p package_name] cue_tool cue_subcommand source_zip_file extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
-  exit 2
-}
-
-instance_path=
-module_path=
-package_name=
-
-function parse_args() {
-  while getopts i:m:p: name
-  do
-    case "${name}" in
-      i) instance_path="${OPTARG}";;
-      h) usage;;
-      m) module_path="${OPTARG}";;
-      p) package_name="${OPTARG}";;
-      ?) usage;;
-    esac
-  done
-  if [ -n "${instance_path}" ] && [ -z "${module_path}" ]; then
-      printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
-      exit 1
-  fi
-  if [ -n "${package_name}" ] && [ -z "${instance_path}" ]; then
-      printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
-      exit 1
-  fi
-}
-
-parse_args "${@}"
-shift $((OPTIND - 1))
-
-cue=$1; shift
-subcommand=$1; shift
-source_zip_file=$1; shift
-extra_args_file=$1; shift
-packageless_files_file=$1; shift
-output_file=$1; shift
-
-unzip -q "${source_zip_file}"
-
-oldwd="${PWD}"
-if [ -n "${module_path}" ]; then
-  cd "${module_path}"
-fi
-
-packageless_file_args=()
-qualifier=
-while read -r line; do
-  if [ -z "${line}" ]; then
-    continue
-  fi
-  if [[ "${line}" =~ .+:$ ]]; then
-    qualifier="${line}"
-  else
-    if [ -n "${qualifier}" ]; then
-      packageless_file_args+=("${qualifier}")
-      qualifier=
-    fi
-    packageless_file_args+=("${oldwd}/${line}")
-  fi
-done < "${oldwd}/${packageless_files_file}"
-if [ -n "${qualifier}" ]; then
-  echo "No file path followed qualifier \"${qualifier}\"." 1>&2
-  exit 1
-fi
-
-"${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
-  ${instance_path}${package_name:+:${package_name}} \
-  ${packageless_file_args[@]+"${packageless_file_args[@]}"} \
-  $(< "${oldwd}/${extra_args_file}") \
-  "${@-}"
-""",
-        arguments = [args],
         mnemonic = mnemonic,
         progress_message = "Capturing the {} CUE configuration for target \"{}\"".format(description, ctx.label.name),
     )
 
 def _make_module_based_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):
     module = ctx.attr.module[CUEModuleInfo]
-    files = [module.module_file]
-    files.extend(module.external_package_sources.to_list())
-    direct_instances = [dep[CUEInstanceInfo] for dep in ctx.attr.deps]
-    deps = depset(
-        direct = direct_instances,
-        transitive = [instance.transitive_instances for instance in direct_instances],
-    )
-    for instance in deps.to_list():
-        files.extend(instance.files)
-
     _make_output_producing_action(
         ctx,
         cue_subcommand,
         mnemonic,
         description,
         augment_args,
-        files,
-        module.root,
+        module.module_file,
     )
 
 def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):
     instance = ctx.attr.instance[CUEInstanceInfo]
-    files = list(instance.files)
-    files.append(instance.module.module_file)
-    files.extend(instance.module.external_package_sources.to_list())
-    for inst in instance.transitive_instances.to_list():
-        files.extend(inst.files)
 
     # NB: If the input path is equal to the starting path, the
     # "paths.relativize" function returns the input path unchanged, as
     # opposed to returning "." to indicate that it's the same
     # directory.
-    relative_instance_path = paths.relativize(instance.directory_path, instance.module.root)
-    if relative_instance_path == instance.directory_path and instance.module.root:
+    module_root_directory = paths.dirname(instance.module.module_file.dirname)
+    relative_instance_path = paths.relativize(instance.directory_path, module_root_directory)
+    if relative_instance_path == instance.directory_path:
         relative_instance_path = "."
     else:
         relative_instance_path = "./" + relative_instance_path
@@ -610,11 +559,36 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
         mnemonic,
         description,
         augment_args,
-        files,
-        instance.module.root,
+        instance.module.module_file,
         relative_instance_path,
         instance.package_name,
     )
+
+def _declare_cue_run_binary(name, runfiles_name):
+    native.config_setting(
+        name = name + "_lacks_runfiles_directory",
+        constraint_values = [
+            Label("@platforms//os:windows"),
+        ],
+    )
+    cue_run_name = name + "_cue_run_from_runfiles"
+    native.sh_binary(
+        name = cue_run_name,
+        # NB: On Windows, we don't expect to have a runfiles directory
+        # available, so instead we rely on a runfiles manifest to tell
+        # us which files should be present where. We use a ZIP archive
+        # to collect and project these runfiles into the right place.
+        srcs = select({
+            ":{}_lacks_runfiles_directory".format(name): [Label("//cue:cue-run-from-archived-runfiles")],
+            "//conditions:default": [Label("//cue:cue-run-from-runfiles")],
+        }),
+        data = [":" + runfiles_name] + select({
+            ":{}_lacks_runfiles_directory".format(name): ["@bazel_tools//tools/zip:zipper"],
+            "//conditions:default": [],
+        }),
+        deps = ["@bazel_tools//tools/bash/runfiles"],
+    )
+    return cue_run_name
 
 def _augment_consolidated_output_args(ctx, args):
     args.add("--out", ctx.attr.output_format)
@@ -625,7 +599,6 @@ def _add_common_consolidated_output_attrs_to(attrs):
             doc = "Output format",
             default = "cue",
             values = [
-                # TODO(seh): Consider relaxing this set.
                 "cue",
                 "json",
                 "text",
@@ -639,7 +612,7 @@ def _add_common_consolidated_output_attrs_to(attrs):
     })
     return attrs
 
-def _wrap_consolidated_output_rule(f, name, **kwargs):
+def _prepare_consolidated_output_rule(name, **kwargs):
     extension_by_format = {
         "cue": "cue",
         "json": "json",
@@ -648,12 +621,66 @@ def _wrap_consolidated_output_rule(f, name, **kwargs):
     }
     output_format = kwargs.get("output_format", "cue")
     result = kwargs.pop("result", name + "." + extension_by_format[output_format])
+    return kwargs | {
+        "result": result,
+    }
 
-    f(
-        name = name,
-        result = result,
-        **kwargs
+def _prepare_module_consuming_rule(name, **kwargs):
+    deps = kwargs.pop("deps", [])
+    module = kwargs.pop("module")
+    qualified_srcs = kwargs.pop("qualified_srcs", {})
+    srcs = kwargs.pop("srcs", [])
+
+    runfiles_name = name + "_cue_runfiles"
+    _cue_module_runfiles(
+        name = runfiles_name,
+        deps = deps,
+        module = module,
+        srcs = srcs,
+        qualified_srcs = qualified_srcs,
     )
+    return kwargs | {
+        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name),
+        "deps": deps,
+        "module": module,
+        "qualified_srcs": qualified_srcs,
+        "srcs": srcs,
+    }
+
+def _prepare_instance_consuming_rule(name, **kwargs):
+    instance = kwargs.pop("instance")
+    qualified_srcs = kwargs.pop("qualified_srcs", {})
+    srcs = kwargs.pop("srcs", [])
+
+    runfiles_name = name + "_cue_runfiles"
+    _cue_instance_runfiles(
+        name = runfiles_name,
+        instance = instance,
+        srcs = srcs,
+        qualified_srcs = qualified_srcs,
+    )
+    return kwargs | {
+        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name),
+        "instance": instance,
+        "qualified_srcs": qualified_srcs,
+        "srcs": srcs,
+    }
+
+def _prepare_standalone_rule(name, **kwargs):
+    qualified_srcs = kwargs.pop("qualified_srcs", {})
+    srcs = kwargs.pop("srcs", [])
+
+    runfiles_name = name + "_cue_runfiles"
+    _cue_standalone_runfiles(
+        name = runfiles_name,
+        srcs = srcs,
+        qualified_srcs = qualified_srcs,
+    )
+    return kwargs | {
+        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name),
+        "qualified_srcs": qualified_srcs,
+        "srcs": srcs,
+    }
 
 def _cue_consolidated_standalone_files_impl(ctx):
     _make_output_producing_action(
@@ -671,7 +698,15 @@ _cue_consolidated_standalone_files = rule(
 )
 
 def cue_consolidated_standalone_files(name, **kwargs):
-    _wrap_consolidated_output_rule(_cue_consolidated_standalone_files, name, **kwargs)
+    _call_rule_after(
+        name,
+        _cue_consolidated_standalone_files,
+        [
+            _prepare_standalone_rule,
+            _prepare_consolidated_output_rule,
+        ],
+        **kwargs
+    )
 
 def _cue_consolidated_files_impl(ctx):
     _make_module_based_output_producing_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_output_args)
@@ -683,7 +718,15 @@ _cue_consolidated_files = rule(
 )
 
 def cue_consolidated_files(name, **kwargs):
-    _wrap_consolidated_output_rule(_cue_consolidated_files, name, **kwargs)
+    _call_rule_after(
+        name,
+        _cue_consolidated_files,
+        [
+            _prepare_module_consuming_rule,
+            _prepare_consolidated_output_rule,
+        ],
+        **kwargs
+    )
 
 def _cue_consolidated_instance_impl(ctx):
     _make_instance_consuming_action(ctx, "def", "CUEDef", "consolidated", _augment_consolidated_output_args)
@@ -695,7 +738,15 @@ _cue_consolidated_instance = rule(
 )
 
 def cue_consolidated_instance(name, **kwargs):
-    _wrap_consolidated_output_rule(_cue_consolidated_instance, name, **kwargs)
+    _call_rule_after(
+        name,
+        _cue_consolidated_instance,
+        [
+            _prepare_instance_consuming_rule,
+            _prepare_consolidated_output_rule,
+        ],
+        **kwargs
+    )
 
 def _augment_exported_output_args(ctx, args):
     if ctx.attr.escape:
@@ -712,7 +763,6 @@ def _add_common_exported_output_attrs_to(attrs):
             doc = "Output format",
             default = "json",
             values = [
-                # TODO(seh): Consider relaxing this set.
                 "json",
                 "text",
                 "yaml",
@@ -725,7 +775,7 @@ def _add_common_exported_output_attrs_to(attrs):
     })
     return attrs
 
-def _wrap_exported_output_rule(f, name, **kwargs):
+def _prepare_exported_output_rule(name, **kwargs):
     extension_by_format = {
         "json": "json",
         "text": "txt",
@@ -733,12 +783,9 @@ def _wrap_exported_output_rule(f, name, **kwargs):
     }
     output_format = kwargs.get("output_format", "json")
     result = kwargs.pop("result", name + "." + extension_by_format[output_format])
-
-    f(
-        name = name,
-        result = result,
-        **kwargs
-    )
+    return kwargs | {
+        "result": result,
+    }
 
 def _cue_exported_standalone_files_impl(ctx):
     _make_output_producing_action(
@@ -756,7 +803,15 @@ _cue_exported_standalone_files = rule(
 )
 
 def cue_exported_standalone_files(name, **kwargs):
-    _wrap_exported_output_rule(_cue_exported_standalone_files, name, **kwargs)
+    _call_rule_after(
+        name,
+        _cue_exported_standalone_files,
+        [
+            _prepare_standalone_rule,
+            _prepare_exported_output_rule,
+        ],
+        **kwargs
+    )
 
 def _cue_exported_files_impl(ctx):
     _make_module_based_output_producing_action(ctx, "export", "CUEExport", "exported", _augment_exported_output_args)
@@ -768,7 +823,15 @@ _cue_exported_files = rule(
 )
 
 def cue_exported_files(name, **kwargs):
-    _wrap_exported_output_rule(_cue_exported_files, name, **kwargs)
+    _call_rule_after(
+        name,
+        _cue_exported_files,
+        [
+            _prepare_module_consuming_rule,
+            _prepare_exported_output_rule,
+        ],
+        **kwargs
+    )
 
 def _cue_exported_instance_impl(ctx):
     _make_instance_consuming_action(ctx, "export", "CUEExport", "exported", _augment_exported_output_args)
@@ -780,4 +843,12 @@ _cue_exported_instance = rule(
 )
 
 def cue_exported_instance(name, **kwargs):
-    _wrap_exported_output_rule(_cue_exported_instance, name, **kwargs)
+    _call_rule_after(
+        name,
+        _cue_exported_instance,
+        [
+            _prepare_instance_consuming_rule,
+            _prepare_exported_output_rule,
+        ],
+        **kwargs
+    )

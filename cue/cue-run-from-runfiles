@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+
+# Copy-pasted from the Bazel Bash runfiles library v2.
+set -uo pipefail; set +e; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \
+  source "$0.runfiles/$f" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
+  { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
+
+# TODO(seh): Remove this once we're using Bazel version 6.1, per
+# https://github.com/bazelbuild/bazel/pull/17279.
+function runfiles_current_repository() {
+  local -r idx=${1:-1}
+  local -r caller_path="${BASH_SOURCE[$idx]}"
+  if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+    echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): caller's path is ($caller_path)"
+  fi
+
+  local rlocation_path=
+
+  # If the runfiles manifest exists, search for an entry with target the caller's path.
+  if [[ -f "${RUNFILES_MANIFEST_FILE:-/dev/null}" ]]; then
+    # Escape $caller_path for use in the grep regex below. Also replace \ with / since the manifest
+    # uses / as the path separator even on Windows.
+    local -r normalized_caller_path="$(echo "$caller_path" | sed 's|\\\\*|/|g')"
+    local -r escaped_caller_path="$(echo "$normalized_caller_path" | sed 's/[^-A-Za-z0-9_/]/\\&/g')"
+    rlocation_path=$(__runfiles_maybe_grep -m1 "^[^ ]* ${escaped_caller_path}$" "${RUNFILES_MANIFEST_FILE}" | cut -d ' ' -f 1)
+    if [[ -z "$rlocation_path" ]]; then
+      if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+        echo >&2 "ERROR[runfiles.bash]: runfiles_current_repository($idx): ($normalized_caller_path) is not the target of an entry in the runfiles manifest ($RUNFILES_MANIFEST_FILE)"
+      fi
+      return 1
+    else
+      if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+        echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($normalized_caller_path) is the target of ($rlocation_path) in the runfiles manifest"
+      fi
+    fi
+  fi
+
+  # If the runfiles directory exists, check if the caller's path is of the form
+  # $RUNFILES_DIR/rlocation_path and if so, set $rlocation_path.
+  if [[ -z "$rlocation_path" && -d "${RUNFILES_DIR:-/dev/null}" ]]; then
+    local -r normalized_caller_path="$(echo "$caller_path" | sed 's|\\\\*|/|g')"
+    local -r normalized_dir="$(echo "${RUNFILES_DIR%[\/]}" | sed 's|\\\\*|/|g')"
+    if [[ "$normalized_caller_path" == "$normalized_dir"/* ]]; then
+      rlocation_path=${normalized_caller_path:${#normalized_dir}}
+      rlocation_path=${rlocation_path:1}
+    fi
+    if [[ -z "$rlocation_path" ]]; then
+      if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+        echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($normalized_caller_path) does not lie under the runfiles directory ($normalized_dir)"
+      fi
+      # The only shell script that is not executed from the runfiles directory (if it is populated)
+      # is the sh_binary entrypoint. Parse its path under the execroot, using the last match to
+      # allow for nested execroots (e.g. in Bazel integration tests).
+      # [seh] NB: This is the patched line.
+      local -r repository=$(echo "$normalized_caller_path" | __runfiles_maybe_grep -E -o '(^|/)bazel-out/[^/]+/bin/external/[^/]+/' | tail -1 | rev | cut -d / -f 2 | rev)
+      if [[ -n "$repository" ]]; then
+        if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+          echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($normalized_caller_path) lies in repository ($repository)"
+        fi
+        echo "$repository"
+      else
+        if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+          echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($normalized_caller_path) lies in the main repository"
+        fi
+        echo ""
+      fi
+      return 0
+    else
+      if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+        echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($caller_path) has path ($rlocation_path) relative to the runfiles directory ($RUNFILES_DIR)"
+      fi
+    fi
+  fi
+
+  if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+    echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($caller_path) corresponds to rlocation path ($rlocation_path)"
+  fi
+  # Normalize the rlocation path to be of the form repo/pkg/file.
+  rlocation_path=${rlocation_path#_main/external/}
+  rlocation_path=${rlocation_path#_main/../}
+  local -r repository=$(echo "$rlocation_path" | cut -d / -f 1)
+  if [[ "$repository" == _main ]]; then
+    if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+      echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($rlocation_path) lies in the main repository"
+    fi
+    echo ""
+  else
+    if [[ "${RUNFILES_LIB_DEBUG:-}" == 1 ]]; then
+      echo >&2 "INFO[runfiles.bash]: runfiles_current_repository($idx): ($rlocation_path) lies in repository ($repository)"
+    fi
+    echo "$repository"
+  fi
+}
+
+function usage() {
+  printf "usage: %s [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  exit 2
+}
+
+instance_path=
+module_file=
+package_name=
+
+function parse_args() {
+  while getopts i:m:p: name
+  do
+    case "${name}" in
+      i) instance_path="${OPTARG}";;
+      h) usage;;
+      m) module_file="${OPTARG}";;
+      p) package_name="${OPTARG}";;
+      ?) usage;;
+    esac
+  done
+  if [ -n "${instance_path}" ] && [ -z "${module_file}" ]; then
+      printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
+      exit 1
+  fi
+  if [ -n "${package_name}" ] && [ -z "${instance_path}" ]; then
+      printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
+      exit 1
+  fi
+}
+
+parse_args "${@}"
+shift $((OPTIND - 1))
+
+cue=$1; shift
+subcommand=$1; shift
+extra_args_file=$1; shift
+packageless_files_file=$1; shift
+output_file=$1; shift
+
+oldwd="${PWD}"
+packageless_file_args=()
+qualifier=
+while read -r line; do
+  if [ -z "${line}" ]; then
+    continue
+  fi
+  if [[ "${line}" =~ .+:$ ]]; then
+    qualifier="${line}"
+  else
+    if [ -n "${qualifier}" ]; then
+      packageless_file_args+=("${qualifier}")
+      qualifier=
+    fi
+    packageless_file_args+=("${oldwd}/$(rlocation ${line})")
+  fi
+done < "${packageless_files_file}"
+if [ -n "${qualifier}" ]; then
+  echo >&2 "No file path followed qualifier \"${qualifier}\"."
+  exit 1
+fi
+
+# NB: If we don't assign to packageless_file_args above in the loop,
+# it winds up being undefined afterward.
+if (( ${#packageless_file_args[@]} == 0 )); then
+  packageless_file_args=()
+fi
+
+if [ -n "${module_file}" ]; then
+  adjusted_module_file="$(rlocation ${module_file})"
+  if [ -z "${adjusted_module_file}" ]; then
+    echo >&2 "No runfile path available for module file path \"${module_file}\"."
+    exit 1
+  fi
+  module_path="$(dirname $(dirname ${adjusted_module_file}))"
+  cd "${module_path}"
+fi
+
+# NB: See https://stackoverflow.com/questions/7577052 for the odd
+# treatment of the "packageless_file_args" array variable here,
+# handling the case where the array winds up empty for lack of
+# so-called "packageless files" being used as input. As we are
+# uncertain of which Bash we'll wind up using, aim to work around as
+# many of their mutually exclusive defects as possible.
+"${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
+  ${instance_path}${package_name:+:${package_name}} \
+  ${packageless_file_args[@]+"${packageless_file_args[@]}"} \
+  $(< "${oldwd}/${extra_args_file}") \
+  "${@-}"
