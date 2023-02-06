@@ -595,10 +595,16 @@ def _declare_cue_run_binary(name, runfiles_name):
     return cue_run_name
 
 def _augment_consolidated_output_args(ctx, args):
+    if ctx.attr.inline_imports:
+        args.add("--inline-imports")
     args.add("--out", ctx.attr.output_format)
 
 def _add_common_consolidated_output_attrs_to(attrs):
     attrs.update({
+        "inline_imports": attr.bool(
+            doc = "Expand references to non-core imports.",
+            default = False,
+        ),
         "output_format": attr.string(
             doc = "Output format",
             default = "cue",
