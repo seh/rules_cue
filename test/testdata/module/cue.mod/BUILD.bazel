@@ -1,4 +1,7 @@
-load("//cue:cue.bzl", "cue_module")
+load(
+    "//cue:cue.bzl",
+    "cue_module",
+)
 
 cue_module(
     visibility = ["//test/testdata/module:__subpackages__"],

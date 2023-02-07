@@ -1,0 +1,13 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "color",
+    srcs = [
+        "color.cue",
+    ],
+    ancestor = "//test/testdata/consolidated/cue.mod",
+    visibility = ["//test/testdata/consolidated:__subpackages__"],
+)

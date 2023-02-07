@@ -1,0 +1,25 @@
+load(
+    "//cue:cue.bzl",
+    "cue_consolidated_files",
+)
+
+exports_files(["consolidated-golden.cue"])
+
+cue_consolidated_files(
+    name = "consolidated",
+    srcs = [
+        "primary.cue",
+        "secondary.cue",
+    ],
+    # See https://github.com/cue-lang/cue/issues/2252 for why we don't
+    # merge any non-CUE data in this test case.
+    inline_imports = True,
+    module = "//test/testdata/consolidated/cue.mod",
+    qualified_srcs = {
+        "extra.ambiguous": "cue",
+    },
+    visibility = ["//test:__subpackages__"],
+    deps = [
+        "//test/testdata/consolidated/cue.mod/pkg/other-example.com/color",
+    ],
+)

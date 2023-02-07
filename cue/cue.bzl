@@ -64,6 +64,9 @@ def _add_common_output_producing_attrs_to(attrs):
             allow_single_file = True,
             cfg = "exec",
         ),
+        "concatenate_objects": attr.bool(
+            doc = "Concatenate multiple objects into a list.",
+        ),
         # Unfortunately, we can't use a private attribute for an
         # implicit dependency here, because we can't fix the default
         # label value.
@@ -86,12 +89,12 @@ def _add_common_output_producing_attrs_to(attrs):
         "inject_system_variables": attr.bool(
             doc = "Whether to inject the predefined set of system variables into tagged fields",
         ),
-        "concatenate_objects": attr.bool(
-            doc = "Concatenate multiple objects into a list.",
-        ),
         "merge_other_files": attr.bool(
             doc = "Merge non-CUE files.",
             default = True,
+        ),
+        "non_cue_file_package_name": attr.string(
+            doc = "Name of the CUE package within which to merge non-CUE files.",
         ),
         "path": attr.string_list(
             doc = """Elements of CUE path at which to place top-level values.
@@ -205,6 +208,8 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
         args.add("--inject-vars")
     if not ctx.attr.merge_other_files:
         args.add("--merge=false")
+    if ctx.attr.non_cue_file_package_name:
+        args.add("--package", ctx.attr.non_cue_file_package_name)
     for p in ctx.attr.path:
         if not p:
             fail(msg = "path element must not be empty")

@@ -1,0 +1,22 @@
+load(
+    "//cue:cue.bzl",
+    "cue_consolidated_standalone_files",
+)
+
+exports_files(["non-cue-golden.cue"])
+
+cue_consolidated_standalone_files(
+    name = "non-cue",
+    srcs = [
+        "merge.cue",
+        "name.txt",
+    ],
+    # NB: This doesn't make a difference for this example, other than
+    # that if we were to specify a different package name here, "cue
+    # def" would fail, complaining about the mismatch.
+    non_cue_file_package_name = "merged",
+    path = [
+        "name:",
+    ],
+    visibility = ["//test:__subpackages__"],
+)

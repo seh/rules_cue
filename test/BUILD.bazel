@@ -1,4 +1,12 @@
-load("cue_test.bzl", "cue_test")
+load(
+    "cue_test.bzl",
+    "cue_test",
+)
+
+cue_test(
+    name = "consolidated",
+    generated_output_file = "//test/testdata/consolidated:consolidated.cue",
+)
 
 cue_test(
     name = "hello_world_hello_world",
@@ -43,6 +51,11 @@ cue_test(
 cue_test(
     name = "my_service_prod",
     generated_output_file = "//test/testdata/myservice/environments:prod.json",
+)
+
+cue_test(
+    name = "non_cue",
+    generated_output_file = "//test/testdata/non-cue:non-cue.cue",
 )
 
 cue_test(

@@ -45,7 +45,7 @@ _TOOLS_BY_RELEASE = {
     },
 }
 
-_DEFAULT_TOOL_VERSION = "v0.4.3"
+_DEFAULT_TOOL_VERSION = "v0.5.0-beta.5"
 
 def known_release_versions():
     return _TOOLS_BY_RELEASE.keys()
