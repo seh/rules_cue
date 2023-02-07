@@ -1,0 +1,15 @@
+{
+    "homepage": "https://github.com/seh/rules_cue",
+    "maintainers": [
+        {
+            "email": "seh@panix.com",
+            "github": "seh",
+            "name": "Steven E. Harris"
+        }
+    ],
+    "repository": [
+        "github:seh/rules_cue"
+    ],
+    "versions": [],
+    "yanked_versions": {}
+}
