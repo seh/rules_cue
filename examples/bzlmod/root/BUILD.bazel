@@ -1,0 +1,33 @@
+load(
+    "@rules_cue//cue:cue.bzl",
+    "cue_exported_standalone_files",
+)
+load(
+    "@bazel_skylib//rules:write_file.bzl",
+    "write_file",
+)
+
+write_file(
+    name = "generated_entries",
+    out = "extra-entries.cue",
+    content = [
+        "package contacts",
+        "extra_entries: [{",
+        "  name: common: \"Cher\"",
+        "  birth: month: \"May\"",
+        "  birth: year: 1946",
+        "}]",
+    ],
+)
+
+cue_exported_standalone_files(
+    name = "root",
+    srcs = [
+        "entries.cue",
+        "schema.cue",
+        ":generated_entries",
+    ],
+    # Sort only by common name, given the complexity of accommodating
+    # the other two optional name components.
+    expression = "list.Sort(list.Concat([entries, extra_entries]), {x: {}, y: {}, less: x.name.common < y.name.common})",
+)
