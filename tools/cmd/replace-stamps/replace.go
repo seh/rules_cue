@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -170,7 +171,11 @@ func main() {
 		}
 		return
 	}
-	f, err := os.CreateTemp("", "replace-")
+	// Don't try writing to the directory reported by os.TempDir, as it's likely sitting within a
+	// different filesystem from the directory containing the eventual output file. Our later
+	// attempt to move a file (via os.Rename) between two different filesystems will fail. Instead,
+	// write the temporary file as a sibling to the eventual output file.
+	f, err := os.CreateTemp(filepath.Dir(*output), "replace-")
 	if err != nil {
 		fatalln(1, "failed to create temporary output file:", err)
 	}
