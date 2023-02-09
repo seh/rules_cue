@@ -305,11 +305,15 @@ def cue_module(name = "cue.mod", **kwargs):
         **kwargs
     )
 
+def _cue_module_root_directory_path(ctx, module):
+    return paths.dirname(paths.dirname(_runfile_path(ctx, module.module_file)))
+
 def _cue_instance_directory_path(ctx):
     if ctx.file.directory_of:
         f = ctx.file.directory_of
-        return f.path if f.is_directory else f.dirname
-    return ctx.label.package
+        runfile_path = _runfile_path(ctx, f)
+        return runfile_path if f.is_directory else paths.dirname(runfile_path)
+    return paths.dirname(_runfile_path(ctx, ctx.files.srcs[0]))
 
 def _cue_instance_impl(ctx):
     ancestor_instance = None
@@ -324,7 +328,7 @@ def _cue_instance_impl(ctx):
                 fail(msg = """dependency {} of instance {} is not part of CUE module "{}"; got "{}" instead""".format(dep, ctx.label, module, dep.module))
 
     instance_directory_path = _cue_instance_directory_path(ctx)
-    module_root_directory = paths.dirname(module.module_file.dirname)
+    module_root_directory = _cue_module_root_directory_path(ctx, module)
     if not (instance_directory_path == module_root_directory or
             # The CUE module may be at the root of the Bazel workspace.
             not module_root_directory or
@@ -379,8 +383,8 @@ instance's CUE files.""",
 If the given target is a directory, use that directly. If the given
 target is a file, use the file's containing directory.
 
-If left unspecified, use the Bazel package directory defining this
-cue_instance.""",
+If left unspecified, use the directory containing the first CUE file
+nominated in this cue_instance's "srcs" attribute.""",
             allow_single_file = True,
         ),
         "package_name": attr.string(
@@ -546,7 +550,7 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
     # "paths.relativize" function returns the input path unchanged, as
     # opposed to returning "." to indicate that it's the same
     # directory.
-    module_root_directory = paths.dirname(instance.module.module_file.dirname)
+    module_root_directory = _cue_module_root_directory_path(ctx, instance.module)
     relative_instance_path = paths.relativize(instance.directory_path, module_root_directory)
     if relative_instance_path == instance.directory_path:
         relative_instance_path = "."
