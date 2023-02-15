@@ -4,7 +4,15 @@ matrix: &matrix
   - debian10
   - macos
   - ubuntu2004
-  - windows
+  # Some valid invocations of the "cue" tool can't succeed (e.g. use
+  # of the "path" and "expression" rules attributes) until we resolve
+  # or find a reliable workaround for the following issue:
+  #
+  #   https://github.com/bazelbuild/bazel/issues/17487
+  #
+  # Until then, withdraw promised support for using this module on
+  # Windows.
+  #- windows
 tasks:
   verify_targets:
     name: Verify that all tests succeed
