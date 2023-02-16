@@ -573,7 +573,7 @@ def _make_instance_consuming_action(ctx, cue_subcommand, mnemonic, description, 
         instance.package_name,
     )
 
-def _declare_cue_run_binary(name, runfiles_name):
+def _declare_cue_run_binary(name, runfiles_name, tags = []):
     native.config_setting(
         name = name + "_lacks_runfiles_directory",
         constraint_values = [
@@ -596,6 +596,7 @@ def _declare_cue_run_binary(name, runfiles_name):
             "//conditions:default": [],
         }),
         deps = ["@bazel_tools//tools/bash/runfiles"],
+        tags = tags,
     )
     return cue_run_name
 
@@ -641,10 +642,11 @@ def _prepare_consolidated_output_rule(name, **kwargs):
     }
 
 def _prepare_module_consuming_rule(name, **kwargs):
-    deps = kwargs.pop("deps", [])
-    module = kwargs.pop("module")
-    qualified_srcs = kwargs.pop("qualified_srcs", {})
-    srcs = kwargs.pop("srcs", [])
+    deps = kwargs.get("deps", [])
+    module = kwargs["module"]
+    qualified_srcs = kwargs.get("qualified_srcs", {})
+    srcs = kwargs.get("srcs", [])
+    tags = kwargs.get("tags", [])
 
     runfiles_name = name + "_cue_runfiles"
     _cue_module_runfiles(
@@ -653,19 +655,17 @@ def _prepare_module_consuming_rule(name, **kwargs):
         module = module,
         srcs = srcs,
         qualified_srcs = qualified_srcs,
+        tags = tags,
     )
     return kwargs | {
-        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name),
-        "deps": deps,
-        "module": module,
-        "qualified_srcs": qualified_srcs,
-        "srcs": srcs,
+        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name, tags),
     }
 
 def _prepare_instance_consuming_rule(name, **kwargs):
-    instance = kwargs.pop("instance")
-    qualified_srcs = kwargs.pop("qualified_srcs", {})
-    srcs = kwargs.pop("srcs", [])
+    instance = kwargs["instance"]
+    qualified_srcs = kwargs.get("qualified_srcs", {})
+    srcs = kwargs.get("srcs", [])
+    tags = kwargs.get("tags", [])
 
     runfiles_name = name + "_cue_runfiles"
     _cue_instance_runfiles(
@@ -673,28 +673,26 @@ def _prepare_instance_consuming_rule(name, **kwargs):
         instance = instance,
         srcs = srcs,
         qualified_srcs = qualified_srcs,
+        tags = tags,
     )
     return kwargs | {
-        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name),
-        "instance": instance,
-        "qualified_srcs": qualified_srcs,
-        "srcs": srcs,
+        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name, tags),
     }
 
 def _prepare_standalone_rule(name, **kwargs):
-    qualified_srcs = kwargs.pop("qualified_srcs", {})
-    srcs = kwargs.pop("srcs", [])
+    qualified_srcs = kwargs.get("qualified_srcs", {})
+    srcs = kwargs.get("srcs", [])
+    tags = kwargs.get("tags", [])
 
     runfiles_name = name + "_cue_runfiles"
     _cue_standalone_runfiles(
         name = runfiles_name,
         srcs = srcs,
         qualified_srcs = qualified_srcs,
+        tags = tags,
     )
     return kwargs | {
-        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name),
-        "qualified_srcs": qualified_srcs,
-        "srcs": srcs,
+        "cue_run": ":" + _declare_cue_run_binary(name, runfiles_name, tags),
     }
 
 def _cue_consolidated_standalone_files_impl(ctx):
