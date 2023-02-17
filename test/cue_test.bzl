@@ -2,6 +2,10 @@ load(
     "@bazel_skylib//lib:paths.bzl",
     "paths",
 )
+load(
+    "@bazel_skylib//rules:diff_test.bzl",
+    "diff_test",
+)
 
 def cue_test(
         name,
@@ -18,16 +22,9 @@ def cue_test(
             golden_basename_prefix = ""
         golden_file = "{}:{}golden{}".format(base, golden_basename_prefix, extension)
 
-    native.sh_test(
+    diff_test(
         name = name + "_test",
-        srcs = ["diff-test-runner"],
-        args = [
-            "$(location %s)" % golden_file,
-            "$(location %s)" % generated_output_file,
-        ],
-        data = [
-            generated_output_file,
-            golden_file,
-        ],
-        #        size = "small",
+        file1 = generated_output_file,
+        file2 = golden_file,
+        size = "small",
     )
