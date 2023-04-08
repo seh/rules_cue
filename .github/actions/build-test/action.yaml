@@ -1,0 +1,27 @@
+name: Build and Test
+description: |
+  Build all eligible Bazel targets and run all available
+  tests, confirming that they all pass.
+runs:
+  using: composite
+  steps:
+  - name: Cache Bazel-related artifacts
+    uses: actions/cache@v3
+    env:
+      cache-name: bazel-cache
+    with:
+      path: |
+        ~/.cache/bazelisk
+        ~/.cache/bazel
+      key: ${{ runner.os }}-${{ env.cache-name }}
+  - name: Build all Bazel targets
+    run: |
+      bazel build \
+        //...
+    shell: bash
+  - name: Test all Bazel targets
+    run: |
+      bazel test \
+        --test_output=errors \
+        //...
+    shell: bash

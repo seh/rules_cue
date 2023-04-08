@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# This program is adapted from "release_prep.sh" in rules_template:
+# https://github.com/bazel-contrib/rules-template/blob/main/.github/workflows/release_prep.sh
+
+set -e -u -o pipefail
+
+ruleset_name="$1"
+shift
+if [ -z "${ruleset_name}" ]; then
+  echo >&2 'Bazel ruleset name must not be empty.'
+  exit 1
+fi
+
+if (( $# < 1 )); then
+  git_tag="${GITHUB_REF_NAME:-}"
+else
+  git_tag="$1"
+  shift
+fi
+if [ -z "${git_tag}" ]; then
+  echo >&2 'Git tag to use for release must not be empty.'
+  exit 1
+fi
+
+# The prefix is chosen to match what GitHub generates for its own
+# source archives.
+git archive \
+    --format=tar \
+    --prefix="${ruleset_name}-${git_tag:1}/" \
+    "${git_tag}" \
+  | gzip > "vcs-archive-${git_tag}.tar.gz"
+
+tag_annotation_subject=$(git tag --list --format='%(contents:subject)' "${git_tag}")
+if [ -n "${tag_annotation_subject}" ]; then
+  echo "# ${tag_annotation_subject}"
+  tag_annotation_body=$(git tag --list --format='%(contents:body)' "${git_tag}")
+  if [ -n "${tag_annotation_body}" ]; then
+    echo "
+${tag_annotation_body}
+"
+  fi
+  echo "# Details"
+fi
+
+cat << EOF
+## Using modules with Bazel 6 and later
+
+1. Enable support for modules in your _.bazelrc_ file by adding the following line:
+  \`common --enable_bzlmod\`
+1. Add the following directive to your _MODULE.bazel_ file:
+\`\`\`starlark
+bazel_dep(name = "${ruleset_name}", version = "${git_tag:1}")
+\`\`\`
+EOF

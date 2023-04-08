@@ -1,0 +1,30 @@
+name: Release
+on:
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows.
+  push:
+    tags:
+    - "v*.*.*"
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out VCS repository
+      uses: actions/checkout@v3
+    - name: Build and test all Bazel targets
+      uses: ./.github/actions/build-test
+    - name: Prepare release notes and artifacts
+      run: |
+        gh_repository="${{ github.repository }}"
+        ref_name="${{ github.ref_name }}"
+        tag_name="${ref_name#refs/heads/}"
+        .github/workflows/prepare-release \
+          "${gh_repository#*/}" \
+          "${tag_name}" \
+        > release-notes.txt
+    - name: Issue release
+      uses: softprops/action-gh-release@v1
+      with:
+        generate_release_notes: true
+        body_path: release-notes.txt
+        files: vcs-archive-*.tar.gz
+        fail_on_unmatched_files: true
