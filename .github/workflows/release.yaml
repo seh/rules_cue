@@ -12,11 +12,28 @@ jobs:
       uses: actions/checkout@v3
     - name: Build and test all Bazel targets
       uses: ./.github/actions/build-test
+    # Work around lack of the annotated tag for the motivating tag
+    # being present unless we fetch at depth zero (meaning fetch all
+    # history, with no depth restriction).
+    #
+    # Pertinent issues and PRs:
+    #   https://github.com/actions/checkout/issues/338
+    #   https://github.com/actions/checkout/issues/448
+    #   https://github.com/actions/checkout/issues/701
+    #   https://github.com/actions/checkout/pull/579
+    #
+    # Basis of inspiration:
+    #   https://github.com/actions/checkout/issues/701#issuecomment-1139627817
+    #   https://stackoverflow.com/a/54635270
+    - name: Fetch annotated Git tag
+      run: |
+        git fetch origin \
+            --no-tags \
+            +refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}
     - name: Prepare release notes and artifacts
       run: |
-        gh_repository="${{ github.repository }}"
-        ref_name="${{ github.ref_name }}"
-        tag_name="${ref_name#refs/heads/}"
+        gh_repository='${{ github.repository }}'
+        tag_name='${{ github.ref_name }}'
         .github/workflows/prepare-release \
           "${gh_repository#*/}" \
           "${tag_name}" \
