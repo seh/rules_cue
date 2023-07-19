@@ -3,6 +3,14 @@
 visibility("public")
 
 _TOOLS_BY_RELEASE = {
+    "v0.6.0-alpha.2": {
+        struct(os = "darwin", arch = "amd64"): "88e5045aa3ee452cf8dea387bc5b43a0353cdde35b76d1ddf61ef4a90b634af7",
+        struct(os = "darwin", arch = "arm64"): "66abd69dc31224996e10a5c216bec44ffa346e72973a0b19307ce8665a022b2b",
+        struct(os = "linux", arch = "amd64"): "ecae7e33622a13b0925186711caa4f8aae23d445d02cde37b894775b5ed91035",
+        struct(os = "linux", arch = "arm64"): "c438a43c420cb31c076ff8fa539a4184825c133dba9fe92e2d9a2c896edce31e",
+        struct(os = "windows", arch = "amd64"): "6f31984f89c9508bc28b00b103c007cd6ee3eeb34ee775d8b81df2e7c397cd5b",
+        struct(os = "windows", arch = "arm64"): "12e07f14d7cc1b70e2cf0ac72f9876d45eb9cd2b03242a17c459bca23d4753d6",
+    },
     "v0.6.0-alpha.1": {
         struct(os = "darwin", arch = "amd64"): "39846589363fd642d082561906894934d06fc6bde2fed9eef8f7ed9aec463a9f",
         struct(os = "darwin", arch = "arm64"): "bdc5a9b9feb3e310bd1261eb472a3b77df76a060dd65712409d716835afa3e1b",
