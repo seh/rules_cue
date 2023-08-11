@@ -8,9 +8,6 @@
     },
     "spec": {
         "replicas": 3,
-        "strategy": {
-            "type": "Recreate"
-        },
         "selector": {
             "matchLabels": {
                 "app": "myservice"
@@ -67,6 +64,9 @@
                     }
                 ]
             }
+        },
+        "strategy": {
+            "type": "Recreate"
         }
     },
     "kind": "Deployment",
