@@ -1,0 +1,2 @@
+#TODO(seh): Remove this once we're using Bazel version 7.
+common --enable_bzlmod
