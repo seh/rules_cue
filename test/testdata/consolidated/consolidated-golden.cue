@@ -5,7 +5,7 @@ import (
 	"math/bits"
 )
 
-eyes:     255
+eyes: 255
 favorite: <math.Pow(2, 3*8) & {
 	0x0000FF
 }
