@@ -1,14 +1,14 @@
 load(
+    "@bazel_skylib//lib:paths.bzl",
+    "paths",
+)
+load(
     "//cue/private:config.bzl",
     "CUEConfigInfo",
 )
 load(
     "//cue/private:future.bzl",
     _runfile_path = "runfile_path",
-)
-load(
-    "@bazel_skylib//lib:paths.bzl",
-    "paths",
 )
 
 CUEModuleInfo = provider(
