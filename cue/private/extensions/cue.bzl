@@ -14,7 +14,7 @@ visibility("//cue")
 def _cue_impl(ctx):
     download_tool(
         name = "cue_tool",
-        version = maximal_selected_version(ctx, "Helm"),
+        version = maximal_selected_version(ctx, "cue"),
     )
 
 cue = module_extension(
