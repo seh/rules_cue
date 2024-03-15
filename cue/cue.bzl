@@ -94,7 +94,13 @@ def _add_common_output_producing_attrs_to(attrs):
             default = True,
         ),
         "non_cue_file_package_name": attr.string(
-            doc = "Name of the CUE package within which to merge non-CUE files.",
+            doc = """Name of the CUE package within which to merge non-CUE files.
+
+Deprecated:
+  Use "output_package_name" instead.""",
+        ),
+        "output_package_name": attr.string(
+            doc = "Name of the CUE package within which to generate CUE output.",
         ),
         "path": attr.string_list(
             doc = """Elements of CUE path at which to place top-level values.
@@ -208,7 +214,9 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
         args.add("--inject-vars")
     if not ctx.attr.merge_other_files:
         args.add("--merge=false")
-    if ctx.attr.non_cue_file_package_name:
+    if ctx.attr.output_package_name:
+        args.add("--package", ctx.attr.output_package_name)
+    elif ctx.attr.non_cue_file_package_name:  # TODO(seh): Remove this after deprecation period.
         args.add("--package", ctx.attr.non_cue_file_package_name)
     for p in ctx.attr.path:
         if not p:
@@ -776,6 +784,7 @@ def _add_common_exported_output_attrs_to(attrs):
             doc = "Output format",
             default = "json",
             values = [
+                "cue",
                 "json",
                 "text",
                 "yaml",
@@ -790,6 +799,7 @@ def _add_common_exported_output_attrs_to(attrs):
 
 def _prepare_exported_output_rule(name, **kwargs):
     extension_by_format = {
+        "cue": "cue",
         "json": "json",
         "text": "txt",
         "yaml": "yaml",
