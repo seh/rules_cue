@@ -924,7 +924,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "7KYasH6676PHk444+UyPhpowGOw4Dkc6/w+29Alf2Fg=",
+        "bzlTransitiveDigest": "K01CgV4xAFf6MwLKkVavyuWF5ccOR9UoSXI3Q/unopw=",
         "accumulatedFileDigests": {},
         "envVariables": {},
         "generatedRepoSpecs": {
@@ -933,7 +933,7 @@
             "ruleClassName": "_download_tool",
             "attributes": {
               "name": "_main~cue~cue_tool",
-              "version": "v0.8.0"
+              "version": "v0.8.2"
             }
           },
           "cue_tool_toolchains": {
@@ -942,7 +942,7 @@
             "attributes": {
               "name": "_main~cue~cue_tool_toolchains",
               "tool_repo": "cue_tool",
-              "version": "v0.8.0"
+              "version": "v0.8.2"
             }
           }
         },

@@ -3,6 +3,14 @@
 visibility("public")
 
 _TOOLS_BY_RELEASE = {
+    "v0.8.2": {
+        struct(os = "darwin", arch = "amd64"): "9f91ca27cfa7110c9e7b69ff751a6521be72db2b28e29b9b36b055e6ffb6d156",
+        struct(os = "darwin", arch = "arm64"): "4c9244623ae0c95971dbcc5f938e210d96efd5c1850bb346b0bdaaf5190a375d",
+        struct(os = "linux", arch = "amd64"): "9c95df381722b8e547ab6f257981c73246ac7c7f7a6da7571b405bef6ffb22a0",
+        struct(os = "linux", arch = "arm64"): "af846c9c11925f4f28f051b8778c779535a307923d7d5fb2a9bdc92aa5925325",
+        struct(os = "windows", arch = "amd64"): "7b172396a63b34c24612c6e9da0e49db137d35f35633b133d5a33eb82e4c3611",
+        struct(os = "windows", arch = "arm64"): "7233a300e98cbdf542f6a4e111e60a090abe9e6d1cab595b47b480d4ace87ce7",
+    },
     "v0.8.0": {
         struct(os = "darwin", arch = "amd64"): "d416cb4ea07a93094c71876c4757371e7f606095ee5861abdaa3cc71e4109ab7",
         struct(os = "darwin", arch = "arm64"): "1fac4b7df251b517f75969603f2bf47f683fe8072c2e4f54ef92559db80fc5ed",
@@ -27,17 +35,9 @@ _TOOLS_BY_RELEASE = {
         struct(os = "windows", arch = "amd64"): "50be1c1a622c2544ae834b377293a587a0c08b3ea6c82441ae1d59435eeb5240",
         struct(os = "windows", arch = "arm64"): "257ab9a0a2723b84cb24f8f6ae7a9f899ebde49b81371ef9ee1ec34facfa2ccd",
     },
-    "v0.6.0": {
-        struct(os = "darwin", arch = "amd64"): "960c8d863f18b1e78c7bc5eeb6e720fe20f47ee7311b935b0bbdeeb5430ab0b0",
-        struct(os = "darwin", arch = "arm64"): "e5af24a5017f3e60eb0d1647744239c5e53c6e521a311c85930eba18ff1bc87a",
-        struct(os = "linux", arch = "amd64"): "3ae7b28e12de2e0554c28d9a9eb3dd919f0640274c925ba0e36de9079af80de2",
-        struct(os = "linux", arch = "arm64"): "57d9517b6af3e33e7614fa755dfb9ce14c3b05195aaa835fbe8e592db3cee203",
-        struct(os = "windows", arch = "amd64"): "69c32671349665ec4af9b8ab7a312e870b8318bf747041c0da2b8f505ce0e2e5",
-        struct(os = "windows", arch = "arm64"): "c8ba01b8914da74bedbca653846c0311dcc2ed07fdb83bebacc59ba0f72c3f7e",
-    },
 }
 
-_DEFAULT_TOOL_VERSION = "v0.8.0"
+_DEFAULT_TOOL_VERSION = "v0.8.2"
 
 def known_release_versions():
     return _TOOLS_BY_RELEASE.keys()
