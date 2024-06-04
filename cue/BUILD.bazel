@@ -2,6 +2,10 @@ load(
     "//cue/private:config.bzl",
     "cue_config",
 )
+load(
+    "//cue/private:cue_bin_for_host.bzl",
+    "cue_bin_for_host",
+)
 
 exports_files([
     "cue-run-from-archived-runfiles",
@@ -14,5 +18,10 @@ cue_config(
         "//cue/private:stamp": True,
         "//conditions:default": False,
     }),
+    visibility = ["//visibility:public"],
+)
+
+cue_bin_for_host(
+    name = "cue",
     visibility = ["//visibility:public"],
 )
