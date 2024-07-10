@@ -10,18 +10,20 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 
 function usage() {
-  printf "usage: %s [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  printf "usage: %s [-c cue_cache_directory] [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
   exit 2
 }
 
+cue_cache_directory=
 instance_path=
 module_file=
 package_name=
 
 function parse_args() {
-  while getopts i:m:p: name
+  while getopts c:i:m:p: name
   do
     case "${name}" in
+      c) cue_cache_directory="${OPTARG}";;
       i) instance_path="${OPTARG}";;
       h) usage;;
       m) module_file="${OPTARG}";;
@@ -29,6 +31,10 @@ function parse_args() {
       ?) usage;;
     esac
   done
+  if [ -n "${cue_cache_directory}" ] && [ ! -d "${cue_cache_directory}" ]; then
+      printf "%s: specified CUE cache directory \"%s\" does not exist\n" "$(basename "${0}" "${cue_cache_directory}")" 1>&2
+      exit 1
+  fi
   if [ -n "${instance_path}" ] && [ -z "${module_file}" ]; then
       printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
       exit 1
@@ -84,6 +90,17 @@ if [ -n "${module_file}" ]; then
   fi
   module_path="$(dirname $(dirname ${adjusted_module_file}))"
   cd "${module_path}"
+fi
+
+# Since we don't have access to the "HOME" environment variable here
+# (barring use of the "--action-env" command-line flag), we must tell
+# CUE where to store its cache explicitly.
+if [ -n "${cue_cache_directory}" ]; then
+  export CUE_CACHE_DIR="${cue_cache_directory}"
+elif [ -z "${HOME:-}" ]; then
+  cue_cache_directory="$(mktemp -d -t cue-XXXXXX)"
+  trap "rm -rf '${cue_cache_directory}'" EXIT
+  export CUE_CACHE_DIR="${cue_cache_directory}"
 fi
 
 # NB: See https://stackoverflow.com/questions/7577052 for the odd

@@ -507,10 +507,13 @@ or another rule that yields a CUEInstanceInfo provider.""",
 
 _cue_toolchain_type = "//tools/cue:toolchain_type"
 
-def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, module_file = None, instance_directory_path = None, instance_package_name = None):
+# TODO(seh): Consider feeding an argument for the
+# "cue_cache_directory_path" parameter here by way of new rule
+# attributes.
+def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, module_file = None, instance_directory_path = None, instance_package_name = None, cue_cache_directory_path = None):
     cue_tool = ctx.toolchains[_cue_toolchain_type].cueinfo.tool
     args = ctx.actions.args()
-    if module_file != None:
+    if module_file:
         args.add("-m", _runfile_path(ctx, module_file))
         if instance_directory_path:
             args.add("-i", instance_directory_path)
@@ -520,6 +523,8 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
         fail(msg = "CUE instance directory path provided without a module directory path")
     elif instance_package_name:
         fail(msg = "CUE package name provided without an instance directory path")
+    if cue_cache_directory_path:
+        args.add("-c", cue_cache_directory_path)
     args.add(cue_tool.path)
     args.add(cue_subcommand)
     stamped_args_file = ctx.actions.declare_file("%s-stamped-args" % ctx.label.name)
