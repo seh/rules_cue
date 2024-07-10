@@ -5,7 +5,7 @@ module(
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_go", version = "0.48.0")
+bazel_dep(name = "rules_go", version = "0.48.1")
 
 cue = use_extension("//cue:extensions.bzl", "cue")
 use_repo(
