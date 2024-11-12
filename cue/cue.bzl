@@ -33,7 +33,7 @@ CUEInstanceInfo = provider(
 
 def _replacer_if_stamping(stamping_policy):
     # NB: We can't access the "_cue_config" attribute here.
-    return Label("//tools/cmd/replace-stamps") if stamping_policy != "Never" else None
+    return Label("//tools/cmd/replace-stamps") if stamping_policy != "Prevent" else None
 
 def _add_common_source_consuming_attrs_to(attrs):
     attrs.update({
