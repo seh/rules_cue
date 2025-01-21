@@ -2,3 +2,5 @@ constraint_setting(
     name = "tool_version",
     visibility = ["//visibility:public"],
 )
+
+exports_files(["toolchain.bzl"])

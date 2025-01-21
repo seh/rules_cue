@@ -1,4 +1,4 @@
-workspace(name = "com_github_seh_rules_cue")
+workspace(name = "rules_cue")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
