@@ -1,5 +1,5 @@
 load(
-    "cue_test.bzl",
+    "//cue:cue.bzl",
     "cue_test",
 )
 
