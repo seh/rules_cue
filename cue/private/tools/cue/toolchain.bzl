@@ -187,6 +187,7 @@ def declare_bazel_toolchains(version, toolchain_prefix):
         constraint_setting = "{}:tool_version".format(_CONTAINING_PACKAGE_PREFIX),
     )
     constraint_value_prefix = "@{}//cue/private/tools".format(_MODULE_REPOSITORY_NAME)
+
     for platform in _TOOLS_BY_RELEASE[version].keys():
         native.toolchain(
             name = "{}_{}_{}_toolchain".format(platform.os, platform.arch, version),

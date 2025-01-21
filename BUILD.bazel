@@ -1,5 +1,5 @@
 load(
-    "@gazelle//:def.bzl",
+    "@bazel_gazelle//:def.bzl",
     "gazelle",
 )
 

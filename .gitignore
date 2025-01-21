@@ -1,6 +1,7 @@
-/bazel-bin
-/bazel-out
-/bazel-rules_cue
-/bazel-testlogs
-
+bazel-bin
+bazel-out
+bazel-bzlmod
+bazel-rules_cue
+bazel-testlogs
 *~
+.bazelrc.*

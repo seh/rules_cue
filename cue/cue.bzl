@@ -162,7 +162,7 @@ def _add_common_instance_consuming_attrs_to(attrs):
     attrs.update({
         "instance": attr.label(
             doc = """CUE instance to export.
- 
+
 This value must refer either to a target using the cue_instance rule
 or another rule that yields a CUEInstanceInfo provider.""",
             providers = [CUEInstanceInfo],
@@ -496,7 +496,7 @@ _cue_instance_runfiles = rule(
     attrs = _add_common_source_consuming_attrs_to({
         "instance": attr.label(
             doc = """CUE instance to export.
- 
+
 This value must refer either to a target using the cue_instance rule
 or another rule that yields a CUEInstanceInfo provider.""",
             providers = [CUEInstanceInfo],
