@@ -240,7 +240,7 @@ _toolchains_repo = repository_rule(
 def download_tool(name, version = None):
     version = version or _DEFAULT_TOOL_VERSION
     if version not in _TOOLS_BY_RELEASE:
-        fail("Unexpected version value {} for cue tool. Availible versions is: {}".format(version, ", ".join(_TOOLS_BY_RELEASE.keys())))
+        fail("Unexpected version {} for cue tool. Available versions: {}".format(version, ", ".join(_TOOLS_BY_RELEASE.keys())))
     for platform in _TOOLS_BY_RELEASE[version].keys():
         repo_name = "{}-{}-{}".format(name, platform.os, platform.arch)
         _download_tool(
