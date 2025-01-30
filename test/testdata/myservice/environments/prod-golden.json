@@ -1,4 +1,6 @@
 {
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
     "metadata": {
         "name": "myservice",
         "namespace": "myservice",
@@ -68,7 +70,5 @@
         "strategy": {
             "type": "Recreate"
         }
-    },
-    "kind": "Deployment",
-    "apiVersion": "extensions/v1beta1"
+    }
 }
