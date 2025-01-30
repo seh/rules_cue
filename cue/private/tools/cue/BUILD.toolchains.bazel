@@ -4,6 +4,6 @@ load(
 )
 
 declare_bazel_toolchains(
-    toolchain_prefix = "@{tool_repo}//",
+    tool_repo_prefix = "@{tool_repo}",
     version = "{version}",
 )
