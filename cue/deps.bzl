@@ -18,7 +18,7 @@ def cue_register_toolchains(version = None, register_toolchains = True):
 
     Args:
         version (str): The version of the Cue toolchain to register.
-                       Defaults to "0.11.0" if not specified.
+                       Defaults to latest known release version if not specified.
         register_toolchains (boolean): if ture, will register toolchains
     """
     latest_release = known_release_versions()[0]  # Get the latest version from the known release versions
