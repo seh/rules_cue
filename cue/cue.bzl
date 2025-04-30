@@ -3,6 +3,10 @@ load(
     "paths",
 )
 load(
+    "@rules_shell//shell:sh_binary.bzl",
+    "sh_binary",
+)
+load(
     "//cue/private:config.bzl",
     "CUEConfigInfo",
 )
@@ -594,7 +598,7 @@ def _declare_cue_run_binary(name, runfiles_name, tags = []):
         ],
     )
     cue_run_name = name + "_cue_run_from_runfiles"
-    native.sh_binary(
+    sh_binary(
         name = cue_run_name,
         # NB: On Windows, we don't expect to have a runfiles directory
         # available, so instead we rely on a runfiles manifest to tell

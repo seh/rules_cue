@@ -4,13 +4,15 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_go", version = "0.50.1")
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_go", version = "0.54.0")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
     version = "1.24.2",
 )
+
+bazel_dep(name = "rules_shell", version = "0.4.0")
 
 cue = use_extension("//cue:extensions.bzl", "cue")
 use_repo(
