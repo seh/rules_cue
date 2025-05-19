@@ -1,0 +1,9 @@
+{
+    "message": {
+        "de": "Hallo, Welt!",
+        "en": "Hello, world!"
+    },
+    "pipeline": {
+        "steps": []
+    }
+}

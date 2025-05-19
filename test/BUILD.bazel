@@ -59,6 +59,11 @@ cue_test(
 )
 
 cue_test(
+    name = "package_text",
+    generated_output_file = "//test/testdata/package:package.json",
+)
+
+cue_test(
     name = "path_raw_text",
     generated_output_file = "//test/testdata/path:raw_text.json",
 )
