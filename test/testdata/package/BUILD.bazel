@@ -1,0 +1,17 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_files",
+)
+
+exports_files(["package-golden.json"])
+
+cue_exported_files(
+    name = "package",
+    srcs = [
+        "buildkite.cue",
+        "de.cue",
+        "en.cue",
+    ],
+    module = "//test/testdata/package/cue.mod",
+    visibility = ["//test:__subpackages__"],
+)

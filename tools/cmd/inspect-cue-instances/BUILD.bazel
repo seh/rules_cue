@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "inspect-cue-instances_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/seh/rules_cue/tools/cmd/inspect-cue-instances",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_spf13_pflag//:pflag",
+        "@org_cuelang_go//cue/build",
+        "@org_cuelang_go//cue/load",
+    ],
+)
+
+go_binary(
+    name = "inspect-cue-instances",
+    embed = [":inspect-cue-instances_lib"],
+    visibility = ["//visibility:public"],
+)
