@@ -9,7 +9,7 @@ bazel_dep(name = "rules_go", version = "0.54.0")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
-    version = "1.24.2",
+    version = "1.24.3",
 )
 
 bazel_dep(name = "rules_shell", version = "0.4.0")
@@ -23,3 +23,11 @@ use_repo(
 register_toolchains("@cue_tool_toolchains//:all")
 
 bazel_dep(name = "gazelle", version = "0.43.0", dev_dependency = True)
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+use_repo(
+    go_deps,
+    "com_github_spf13_pflag",
+    "org_cuelang_go",
+)

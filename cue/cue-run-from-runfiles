@@ -99,7 +99,8 @@ if [ -n "${cue_cache_directory}" ]; then
   export CUE_CACHE_DIR="${cue_cache_directory}"
 elif [ -z "${HOME:-}" ]; then
   cue_cache_directory="$(mktemp -d -t cue-XXXXXX)"
-  trap "rm -rf '${cue_cache_directory}'" EXIT
+  # See CUE issue 3131 for an alternate way to clean up this cache.
+  trap "chmod -R +w '${cue_cache_directory}' && rm -rf '${cue_cache_directory}'" EXIT
   export CUE_CACHE_DIR="${cue_cache_directory}"
 fi
 
