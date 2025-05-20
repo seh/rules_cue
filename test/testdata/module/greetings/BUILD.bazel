@@ -11,3 +11,16 @@ cue_instance(
     ancestor = "//test/testdata/module/cue.mod",
     visibility = [":__subpackages__"],
 )
+
+# TODO(seh): Remove this after testing.
+genrule(
+    name = "print_file",
+    srcs = [
+        "@rules_cue_test_testdata_module_cue.mod_cue.mod//:cache.txt",
+    ],
+    outs = [
+        "file.txt",
+    ],
+    #cmd = "cp $< $@",
+    cmd = """for f in $(SRCS); do cat $${f} >> $@; echo "\n---" >> $@; done""",
+)
