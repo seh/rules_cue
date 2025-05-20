@@ -22,7 +22,7 @@ use_repo(
 
 register_toolchains("@cue_tool_toolchains//:all")
 
-bazel_dep(name = "gazelle", version = "0.44.0", dev_dependency = True)
+bazel_dep(name = "gazelle", version = "0.44.0")
 
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//:go.mod")
@@ -30,4 +30,21 @@ use_repo(
     go_deps,
     "com_github_spf13_pflag",
     "org_cuelang_go",
+)
+
+cue_modules = use_extension("//cue:extensions.bzl", "cue_modules", dev_dependency = True)
+cue_modules.cache(
+    module_roots = [
+        # keep sorted
+        #"//test/testdata/consolidated/cue.mod",
+        #"//test/testdata/hello_world/cue.mod",
+        "//test/testdata/module/cue.mod",
+        #"//test/testdata/myservice/cue.mod",
+        #"//test/testdata/package/cue.mod",
+    ],
+)
+use_repo(
+    cue_modules,
+    "cue_modules_summary",
+    "rules_cue_test_testdata_module_cue.mod_cue.mod",
 )

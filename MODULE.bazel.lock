@@ -160,7 +160,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "0wBoKlHSADcX+dBGAtyEGpQ4nMzu4xlM3sIERRz1MOk=",
+        "bzlTransitiveDigest": "yLKEen1hj8+FiXgkSDenpKXHGyUG9XYeDa1ZRm+Wkis=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -181,6 +181,47 @@
           }
         },
         "recordedRepoMappingEntries": []
+      }
+    },
+    "//cue:extensions.bzl%cue_modules": {
+      "general": {
+        "bzlTransitiveDigest": "yLKEen1hj8+FiXgkSDenpKXHGyUG9XYeDa1ZRm+Wkis=",
+        "usagesDigest": "zTCoteF/3uuh9hms+cV0rAHe5HBqgdRXdbVlXN6PBe8=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "rules_cue_test_testdata_module_cue.mod_cue.mod": {
+            "repoRuleId": "@@//cue/private:cue-module-cache.bzl%cue_module_cache",
+            "attributes": {
+              "root": "@@//test/testdata/module/cue.mod:cue.mod"
+            }
+          },
+          "cue_modules_summary": {
+            "repoRuleId": "@@//cue/private/extensions:cue-modules.bzl%_cue_modules_summary",
+            "attributes": {
+              "cue_module_cache_repos_by_cue_module": {
+                "@@//test/testdata/module/cue.mod:cue.mod": "'@@+cue_modules+rules_cue_test_testdata_module_cue.mod_cue.mod//:cache.txt'"
+              }
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
+          "explicitRootModuleDirectDeps": [],
+          "explicitRootModuleDirectDevDeps": [
+            "cue_modules_summary",
+            "rules_cue_test_testdata_module_cue.mod_cue.mod"
+          ],
+          "useAllRepos": "NO",
+          "reproducible": false
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "",
+            "rules_cue_test_testdata_module_cue.mod_cue.mod",
+            "+cue_modules+rules_cue_test_testdata_module_cue.mod_cue.mod"
+          ]
+        ]
       }
     },
     "@@pybind11_bazel+//:python_configure.bzl%extension": {

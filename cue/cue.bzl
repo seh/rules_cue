@@ -3,8 +3,17 @@ load(
     "paths",
 )
 load(
+    "@cue_modules_summary//:cue-module-cache-repos.bzl",
+    _cue_module_cache_repos_by_cue_module = "CUE_MODULE_CACHE_REPOS_BY_CUE_MODULE",
+)
+load(
     "@rules_shell//shell:sh_binary.bzl",
     "sh_binary",
+)
+load(
+    "//cue:providers.bzl",
+    "CUEInstanceInfo",
+    "CUEModuleInfo",
 )
 load(
     "//cue/private:config.bzl",
@@ -13,26 +22,6 @@ load(
 load(
     "//cue/private:future.bzl",
     _runfile_path = "runfile_path",
-)
-
-CUEModuleInfo = provider(
-    doc = "Collects files from cue_module targets for use by referring cue_instance targets.",
-    fields = {
-        "module_file": """The "module.cue" file in the module directory.""",
-        # TODO(seh): Consider abandoning this field in favor of using cue_instance for these.
-        "external_package_sources": "The set of files in this CUE module defining external packages.",
-    },
-)
-
-CUEInstanceInfo = provider(
-    doc = "Collects files and references from cue_instance targets for use in downstream consuming targets.",
-    fields = {
-        "directory_path": """Directory path (a "short path") to the CUE instance.""",
-        "files": "The CUE files defining this instance.",
-        "module": "The CUE module within which this instance sits.",
-        "package_name": "Name of the CUE package to load for this instance.",
-        "transitive_files": "The set of files (including other instances) referenced by this instance.",
-    },
 )
 
 def _replacer_if_stamping(stamping_policy):
@@ -289,6 +278,29 @@ def _cue_module_impl(ctx):
     directory = paths.basename(module_file.dirname)
     if directory != expected_module_directory:
         fail(msg = """supplied CUE module directory is not named "{}"; got "{}" instead""".format(expected_module_directory, directory))
+
+    # If this module is not mentioned in the set provided to the
+    # "cue_modules" module extension's "cache" tag, then proceed
+    # without a dedicated cache directory.
+    if ctx.file._cue_module_cache_descriptor_file:
+        # TODO(seh): Revise this to do something useful.
+        args = ctx.actions.args()
+        module_cache_check_file = ctx.actions.declare_file("%s-module-cache-check" % ctx.label.name)
+        args.add(ctx.file._cue_module_cache_descriptor_file.path)
+        args.add(module_cache_check_file.path)
+        ctx.actions.run_shell(
+            arguments = [args],
+            inputs = [
+                ctx.file._cue_module_cache_descriptor_file,
+            ],
+            outputs = [module_cache_check_file],
+            command = """
+            echo 'Reading $1'
+            cat $1
+            echo 'TODO' > $2
+            """,
+        )
+
     return [
         CUEModuleInfo(
             module_file = module_file,
@@ -298,9 +310,28 @@ def _cue_module_impl(ctx):
         ),
     ]
 
+_CUE_MODULE_CACHE_REPOS_BY_CUE_MODULE = {
+    Label(k): Label(v)
+    for k, v in _cue_module_cache_repos_by_cue_module.items()
+}
+
+def _module_cache_descriptor_file_for_cue_module(name, file):
+    # TODO(seh): Remove this.
+    print("CUE module cache repositories:", _cue_module_cache_repos_by_cue_module)
+    cue_module_root_label = file.same_package_label(name)
+    if not cue_module_root_label in _CUE_MODULE_CACHE_REPOS_BY_CUE_MODULE:
+        # TODO(seh): Remove this after testing.
+        print("Warning: CUE module root label \"{}\" is not mentioned in the mapping to CUE module cache repositories.".format(cue_module_root_label))
+        return None
+    return _CUE_MODULE_CACHE_REPOS_BY_CUE_MODULE[cue_module_root_label]
+
 _cue_module = rule(
     implementation = _cue_module_impl,
     attrs = {
+        "_cue_module_cache_descriptor_file": attr.label(
+            default = _module_cache_descriptor_file_for_cue_module,
+            allow_single_file = True,
+        ),
         "file": attr.label(
             doc = "module.cue file for this CUE module.",
             allow_single_file = [".cue"],
