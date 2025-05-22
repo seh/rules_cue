@@ -3,6 +3,14 @@
 visibility("public")
 
 _TOOLS_BY_RELEASE = {
+    "v0.13.0": {
+        struct(os = "darwin", arch = "amd64"): "a31d34e22a9c3082fbfaaa9a9b8ef92085b4cbd95090cc67efc2e4fb501e2030",
+        struct(os = "darwin", arch = "arm64"): "d70bcd278b8b20c78d550fa6a59da88b5fa65688ff3e8fc32a5aeec39aa4868a",
+        struct(os = "linux", arch = "amd64"): "59ba96137da07cd2cdd2e17ec33af81f850126f022f25dd96516f0b42071b6a9",
+        struct(os = "linux", arch = "arm64"): "59dcf4af25bf872decb44e2a706d75f822b32bbd06e83252cd181a177957ad00",
+        struct(os = "windows", arch = "amd64"): "a17423528e176f984ae4778fe5c757955783985913a8e18d6ccc663eaf91c279",
+        struct(os = "windows", arch = "arm64"): "fef57df2265c9ce92426ea698c9bf38e053f6b579a5f7cf1b8963926252aac00",
+    },
     "v0.12.1": {
         struct(os = "darwin", arch = "amd64"): "a39201b519d26388074fdb5aaafc653e98bade9e3d4472d4044f75a6888bfcba",
         struct(os = "darwin", arch = "arm64"): "3eb7180adc231503b519cfa0934c0f856a2ad850d84ad3f6988bf86f6b2ace9f",
@@ -45,7 +53,7 @@ _TOOLS_BY_RELEASE = {
     },
 }
 
-_DEFAULT_TOOL_VERSION = "v0.12.1"
+_DEFAULT_TOOL_VERSION = "v0.13.0"
 
 def known_release_versions():
     return _TOOLS_BY_RELEASE.keys()

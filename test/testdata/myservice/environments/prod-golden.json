@@ -15,6 +15,9 @@
                 "app": "myservice"
             }
         },
+        "strategy": {
+            "type": "Recreate"
+        },
         "template": {
             "metadata": {
                 "labels": {
@@ -41,17 +44,6 @@
                         "name": "myservice",
                         "image": "myorg/myservice:latest",
                         "imagePullPolicy": "Always",
-                        "volumeMounts": [
-                            {
-                                "name": "config",
-                                "mountPath": "/etc/myservice/config.yaml",
-                                "subPath": "config.yaml"
-                            },
-                            {
-                                "name": "credentials",
-                                "mountPath": "/etc/myservice/secure"
-                            }
-                        ],
                         "lifecycle": {
                             "postStart": {
                                 "exec": {
@@ -62,13 +54,21 @@
                                     ]
                                 }
                             }
-                        }
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "config",
+                                "mountPath": "/etc/myservice/config.yaml",
+                                "subPath": "config.yaml"
+                            },
+                            {
+                                "name": "credentials",
+                                "mountPath": "/etc/myservice/secure"
+                            }
+                        ]
                     }
                 ]
             }
-        },
-        "strategy": {
-            "type": "Recreate"
         }
     }
 }
