@@ -596,6 +596,7 @@ def _declare_cue_run_binary(name, runfiles_name, tags = []):
         constraint_values = [
             Label("@platforms//os:windows"),
         ],
+        visibility = ["//visibility:private"],
     )
     cue_run_name = name + "_cue_run_from_runfiles"
     sh_binary(

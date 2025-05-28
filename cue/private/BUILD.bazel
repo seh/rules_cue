@@ -3,4 +3,5 @@ config_setting(
     values = {
         "stamp": "true",
     },
+    visibility = ["//cue:__subpackages__"],
 )
