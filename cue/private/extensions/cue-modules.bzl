@@ -77,7 +77,7 @@ def _cue_modules_impl(ctx):
                         required_dev_repository_names.add(repository_name)
                     else:
                         required_repository_names.add(repository_name)
-                cue_module_cache_repos_by_cue_module[cue_module_root] = str(Label("@{}//:cache.txt".format(repository_name)))
+                cue_module_cache_repos_by_cue_module[cue_module_root] = "@{}//:cache.txt".format(repository_name)
 
     # TODO(seh): Only create this repository on behalf of the root module?
     # TODO(seh): Distinguish its name for the root module? If so, how

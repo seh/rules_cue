@@ -160,7 +160,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "LnqmFQ++riCy6h9GhACTaU21B89cx+8QIqlh7kphZJQ=",
+        "bzlTransitiveDigest": "SLVbljrerJfSvGgV6pQNy9X9vZLwd5QISrJR9a/fTmo=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -185,7 +185,7 @@
     },
     "//cue:extensions.bzl%cue_modules": {
       "general": {
-        "bzlTransitiveDigest": "LnqmFQ++riCy6h9GhACTaU21B89cx+8QIqlh7kphZJQ=",
+        "bzlTransitiveDigest": "SLVbljrerJfSvGgV6pQNy9X9vZLwd5QISrJR9a/fTmo=",
         "usagesDigest": "zTCoteF/3uuh9hms+cV0rAHe5HBqgdRXdbVlXN6PBe8=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -201,7 +201,7 @@
             "repoRuleId": "@@//cue/private/extensions:cue-modules.bzl%_cue_modules_summary",
             "attributes": {
               "cue_module_cache_repos_by_cue_module": {
-                "@@//test/testdata/module/cue.mod:cue.mod": "'@@+cue_modules+rules_cue_test_testdata_module_cue.mod_cue.mod//:cache.txt'"
+                "@@//test/testdata/module/cue.mod:cue.mod": "@rules_cue_test_testdata_module_cue.mod_cue.mod//:cache.txt"
               }
             }
           }
@@ -215,13 +215,7 @@
           "useAllRepos": "NO",
           "reproducible": false
         },
-        "recordedRepoMappingEntries": [
-          [
-            "",
-            "rules_cue_test_testdata_module_cue.mod_cue.mod",
-            "+cue_modules+rules_cue_test_testdata_module_cue.mod_cue.mod"
-          ]
-        ]
+        "recordedRepoMappingEntries": []
       }
     },
     "@@pybind11_bazel+//:python_configure.bzl%extension": {
