@@ -79,11 +79,6 @@ def _cue_modules_impl(ctx):
                         required_repository_names.add(repository_name)
                 cue_module_cache_repos_by_cue_module[cue_module_root] = "@{}//:cache.txt".format(repository_name)
 
-    # TODO(seh): Only create this repository on behalf of the root module?
-    # TODO(seh): Distinguish its name for the root module? If so, how
-    # would we know its name elsewhere in the "cue_module" rule's
-    # attribute?
-    # See https://bazel.build/external/extension#only_the_root_module_should_directly_affect_repository_names.
     modules_summary_repository_name = "cue_modules_summary"
     _cue_modules_summary(
         name = modules_summary_repository_name,

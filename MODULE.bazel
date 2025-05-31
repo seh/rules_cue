@@ -32,8 +32,14 @@ use_repo(
     "org_cuelang_go",
 )
 
-cue_modules = use_extension("//cue:extensions.bzl", "cue_modules", dev_dependency = True)
-cue_modules.cache(
+cue_modules = use_extension("//cue:extensions.bzl", "cue_modules")
+use_repo(
+    cue_modules,
+    "cue_modules_summary",
+)
+
+cue_modules_dev = use_extension("//cue:extensions.bzl", "cue_modules", dev_dependency = True)
+cue_modules_dev.cache(
     module_roots = [
         # keep sorted
         #"//test/testdata/consolidated/cue.mod",
@@ -44,7 +50,6 @@ cue_modules.cache(
     ],
 )
 use_repo(
-    cue_modules,
-    "cue_modules_summary",
+    cue_modules_dev,
     "rules_cue_test_testdata_module_cue.mod_cue.mod",
 )
