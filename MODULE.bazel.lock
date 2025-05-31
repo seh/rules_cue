@@ -207,9 +207,10 @@
           }
         },
         "moduleExtensionMetadata": {
-          "explicitRootModuleDirectDeps": [],
+          "explicitRootModuleDirectDeps": [
+            "cue_modules_summary"
+          ],
           "explicitRootModuleDirectDevDeps": [
-            "cue_modules_summary",
             "rules_cue_test_testdata_module_cue.mod_cue.mod"
           ],
           "useAllRepos": "NO",
