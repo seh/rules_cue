@@ -282,16 +282,17 @@ def _cue_module_impl(ctx):
     # If this module is not mentioned in the set provided to the
     # "cue_modules" module extension's "cache" tag, then proceed
     # without a dedicated cache directory.
-    if ctx.file._cue_module_cache_descriptor_file:
+    # TODO(seh): Switch this back to using the "_cue_module_cache_descriptor_file" attribute.
+    if ctx.file.cue_module_cache_descriptor_file_x:
         # TODO(seh): Revise this to do something useful.
         args = ctx.actions.args()
         module_cache_check_file = ctx.actions.declare_file("%s-module-cache-check" % ctx.label.name)
-        args.add(ctx.file._cue_module_cache_descriptor_file.path)
+        args.add(ctx.file.cue_module_cache_descriptor_file_x.path)
         args.add(module_cache_check_file.path)
         ctx.actions.run_shell(
             arguments = [args],
             inputs = [
-                ctx.file._cue_module_cache_descriptor_file,
+                ctx.file.cue_module_cache_descriptor_file_x,
             ],
             outputs = [module_cache_check_file],
             command = """
@@ -328,8 +329,14 @@ def _module_cache_descriptor_file_for_cue_module(name, file):
 _cue_module = rule(
     implementation = _cue_module_impl,
     attrs = {
+        # TODO(seh): Adjust this.
         "_cue_module_cache_descriptor_file": attr.label(
-            default = _module_cache_descriptor_file_for_cue_module,
+            #default = _module_cache_descriptor_file_for_cue_module,
+            allow_single_file = True,
+        ),
+        # TODO(seh): Adjust this.
+        "cue_module_cache_descriptor_file_x": attr.label(
+            mandatory = True,
             allow_single_file = True,
         ),
         "file": attr.label(
@@ -347,7 +354,78 @@ _cue_module = rule(
 def cue_module(name = "cue.mod", **kwargs):
     file = kwargs.pop("file", "module.cue")
 
+    repo_name = native.repository_name().lstrip("@")
+    cache_repo_name = "_".join(
+        [native.module_name()] +
+        ([repo_name.replace("+", "_")] if repo_name else []) +
+        [
+            native.package_name().replace("/", "_"),
+            name,
+        ],
+    )
+
     _cue_module(
+        name = name,
+        cue_module_cache_descriptor_file_x = "@{}//:cache.txt".format(cache_repo_name),
+        file = file,
+        **kwargs
+    )
+
+def _cue_module_root_impl(name, visibility, file, **kwargs):
+    repo_name = native.repository_name().lstrip("@")
+    cache_repo_name = "_".join(
+        [native.module_name()] +
+        ([repo_name.replace("+", "_")] if repo_name else []) +
+        [
+            native.package_relative_label("module.cue").package.replace("/", "_"),
+            name,
+        ],
+    )
+
+    _cue_module(
+        name = name,
+        file = file,
+        visibility = visibility,
+        # TODO(seh): This mandates this repository's existence,
+        # forcing mention of it in the MODULE.bazel file, which then
+        # duplicates information. If we indicate here that we wish to
+        # use a cache, then we also have to mention this target in the
+        # MODUL.bazel file. Conversely, if we don't wisth to use a
+        # cache, we'd need to indicate here in order to able to omit
+        # its mention from the MODULE.bazel file. Better would be if
+        # we could coordinate some way to opt in or out of using a
+        # cache for this CUE module with a singular designation.
+        #
+        # We could introduce a boolean attribute here to control
+        # whether we construct this attribute value, but the module
+        # extension wouldn't know whether or not we had opted in or
+        # out, because it can't see macro invocations.
+        #
+        # Is there some way that we could read the "summary" file
+        # created by the module extension from here? We can read it in
+        # the rule's implementation function (evaluated in the later
+        # Analysis phase), but we need to construct this label here—in
+        # the context of the calling module's package, and not in the
+        # context of the module in which the rule is defined.
+        cue_module_cache_descriptor_file_x = "@{}//:cache.txt".format(cache_repo_name),
+        **kwargs
+    )
+
+cue_module_root = macro(
+    inherit_attrs = _cue_module,
+    attrs = {
+        # TODO(seh): Is this the only way to treat this as a
+        # hidden/private attribute of the rule?
+        "cue_module_cache_descriptor_file_x": None,
+    },
+    implementation = _cue_module_root_impl,
+)
+
+# TODO(seh): Consider renaming this.
+def cue_module_simple(name = "cue.mod", **kwargs):
+    file = kwargs.pop("file", "module.cue")
+
+    cue_module_root(
         name = name,
         file = file,
         **kwargs

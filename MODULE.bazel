@@ -42,14 +42,18 @@ cue_modules_dev = use_extension("//cue:extensions.bzl", "cue_modules", dev_depen
 cue_modules_dev.cache(
     module_roots = [
         # keep sorted
-        #"//test/testdata/consolidated/cue.mod",
-        #"//test/testdata/hello_world/cue.mod",
+        "//test/testdata/consolidated/cue.mod",
+        "//test/testdata/hello_world/cue.mod",
         "//test/testdata/module/cue.mod",
-        #"//test/testdata/myservice/cue.mod",
-        #"//test/testdata/package/cue.mod",
+        "//test/testdata/myservice/cue.mod",
+        "//test/testdata/package/cue.mod",
     ],
 )
 use_repo(
     cue_modules_dev,
+    "rules_cue_test_testdata_consolidated_cue.mod_cue.mod",
+    "rules_cue_test_testdata_hello_world_cue.mod_cue.mod",
     "rules_cue_test_testdata_module_cue.mod_cue.mod",
+    "rules_cue_test_testdata_myservice_cue.mod_cue.mod",
+    "rules_cue_test_testdata_package_cue.mod_cue.mod",
 )
