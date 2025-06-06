@@ -1,8 +1,14 @@
 load(
     "//cue:cue.bzl",
-    "cue_module",
+    #    "cue_module_root",
+    "cue_module_simple",
 )
 
-cue_module(
+# cue_module_root(
+#     name = "cue.mod",
+#     visibility = ["//test/testdata/module:__subpackages__"],
+# )
+
+cue_module_simple(
     visibility = ["//test/testdata/module:__subpackages__"],
 )

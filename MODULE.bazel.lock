@@ -160,7 +160,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "SLVbljrerJfSvGgV6pQNy9X9vZLwd5QISrJR9a/fTmo=",
+        "bzlTransitiveDigest": "UnWtYsOeUXU1Dkv8BpvkslfB+4759TJlUFzu1FRr2E0=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -185,23 +185,51 @@
     },
     "//cue:extensions.bzl%cue_modules": {
       "general": {
-        "bzlTransitiveDigest": "SLVbljrerJfSvGgV6pQNy9X9vZLwd5QISrJR9a/fTmo=",
-        "usagesDigest": "zTCoteF/3uuh9hms+cV0rAHe5HBqgdRXdbVlXN6PBe8=",
+        "bzlTransitiveDigest": "UnWtYsOeUXU1Dkv8BpvkslfB+4759TJlUFzu1FRr2E0=",
+        "usagesDigest": "yYIUK/h+ya6oLc61COVY91D3yK/1RN71ehog6ViU9Ts=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
         "generatedRepoSpecs": {
+          "rules_cue_test_testdata_consolidated_cue.mod_cue.mod": {
+            "repoRuleId": "@@//cue/private:cue-module-cache.bzl%cue_module_cache",
+            "attributes": {
+              "root": "@@//test/testdata/consolidated/cue.mod:cue.mod"
+            }
+          },
+          "rules_cue_test_testdata_hello_world_cue.mod_cue.mod": {
+            "repoRuleId": "@@//cue/private:cue-module-cache.bzl%cue_module_cache",
+            "attributes": {
+              "root": "@@//test/testdata/hello_world/cue.mod:cue.mod"
+            }
+          },
           "rules_cue_test_testdata_module_cue.mod_cue.mod": {
             "repoRuleId": "@@//cue/private:cue-module-cache.bzl%cue_module_cache",
             "attributes": {
               "root": "@@//test/testdata/module/cue.mod:cue.mod"
             }
           },
+          "rules_cue_test_testdata_myservice_cue.mod_cue.mod": {
+            "repoRuleId": "@@//cue/private:cue-module-cache.bzl%cue_module_cache",
+            "attributes": {
+              "root": "@@//test/testdata/myservice/cue.mod:cue.mod"
+            }
+          },
+          "rules_cue_test_testdata_package_cue.mod_cue.mod": {
+            "repoRuleId": "@@//cue/private:cue-module-cache.bzl%cue_module_cache",
+            "attributes": {
+              "root": "@@//test/testdata/package/cue.mod:cue.mod"
+            }
+          },
           "cue_modules_summary": {
             "repoRuleId": "@@//cue/private/extensions:cue-modules.bzl%_cue_modules_summary",
             "attributes": {
               "cue_module_cache_repos_by_cue_module": {
-                "@@//test/testdata/module/cue.mod:cue.mod": "@rules_cue_test_testdata_module_cue.mod_cue.mod//:cache.txt"
+                "@@//test/testdata/consolidated/cue.mod:cue.mod": "@rules_cue_test_testdata_consolidated_cue.mod_cue.mod//:cache.txt",
+                "@@//test/testdata/hello_world/cue.mod:cue.mod": "@rules_cue_test_testdata_hello_world_cue.mod_cue.mod//:cache.txt",
+                "@@//test/testdata/module/cue.mod:cue.mod": "@rules_cue_test_testdata_module_cue.mod_cue.mod//:cache.txt",
+                "@@//test/testdata/myservice/cue.mod:cue.mod": "@rules_cue_test_testdata_myservice_cue.mod_cue.mod//:cache.txt",
+                "@@//test/testdata/package/cue.mod:cue.mod": "@rules_cue_test_testdata_package_cue.mod_cue.mod//:cache.txt"
               }
             }
           }
@@ -211,7 +239,11 @@
             "cue_modules_summary"
           ],
           "explicitRootModuleDirectDevDeps": [
-            "rules_cue_test_testdata_module_cue.mod_cue.mod"
+            "rules_cue_test_testdata_consolidated_cue.mod_cue.mod",
+            "rules_cue_test_testdata_hello_world_cue.mod_cue.mod",
+            "rules_cue_test_testdata_module_cue.mod_cue.mod",
+            "rules_cue_test_testdata_myservice_cue.mod_cue.mod",
+            "rules_cue_test_testdata_package_cue.mod_cue.mod"
           ],
           "useAllRepos": "NO",
           "reproducible": false
