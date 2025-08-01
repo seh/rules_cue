@@ -160,7 +160,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "0wBoKlHSADcX+dBGAtyEGpQ4nMzu4xlM3sIERRz1MOk=",
+        "bzlTransitiveDigest": "AbtMg8PrctPB4lsO/NTy6uVQY3Xi8n5UV1pgaG26/O0=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -169,14 +169,14 @@
           "cue_tool": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
-              "version": "v0.13.2"
+              "version": "v0.14.0"
             }
           },
           "cue_tool_toolchains": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_toolchains_repo",
             "attributes": {
               "tool_repo": "cue_tool",
-              "version": "v0.13.2"
+              "version": "v0.14.0"
             }
           }
         },
