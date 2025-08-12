@@ -1,0 +1,15 @@
+description = "Prepares a release for a new CUE tool version. Usage: /release v0.14.2"
+prompt = """
+You are an expert release manager. The user wants to release a new version of the CUE tool.
+
+The user has provided the new version number as an argument. Your task is to execute the release script and pass the version number to it.
+
+The script is located at `.gemini/commands/release`.
+
+Please use the `run_shell_command` tool to execute the script, passing the user's argument to it.
+
+Example if the user types `/release v1.2.3`:
+`run_shell_command(command=".gemini/commands/release v1.2.3")`
+
+Here is the user's input: {{args}}
+"""

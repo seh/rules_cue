@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [ -z "${1-CUE_VERSION}" ]; then
+  echo "Usage: $0 <cue_version>"
+  echo "Example: $0 v0.14.2"
+  exit 1
+fi
+
+VERSION=$1
+
+echo "--- Starting release process for CUE version ${VERSION} ---"
+
+# Step 1: Update toolchain.bzl using our Go tool
+echo "--> Updating toolchain.bzl..."
+bazelisk run //tools/cmd/update-cue-version -- -version "${VERSION}"
+echo "--> Formatting toolchain.bzl..."
+buildifier cue/private/tools/cue/toolchain.bzl
+
+# Step 2: Clean and run tests
+echo "--> Cleaning and running tests..."
+bazelisk clean
+bazelisk test //...
+
+# Step 3: Update Bazel module dependencies
+echo "--> Updating Bazel module dependencies..."
+bazelisk mod deps --lockfile_mode=update
+
+# Step 4: Commit the changes
+COMMIT_HEADLINE="Update set of available CUE toolchain versions"
+COMMIT_BODY="Introduce version ${VERSION}, establishing it as the new default."
+
+echo "--> Creating new commit..."
+# Create a new commit with the changes
+jj new
+# Update the description of the new commit
+jj describe -m "${COMMIT_HEADLINE}" -m "${COMMIT_BODY}"
+
+echo "--- Release preparation complete ---"
+echo "New commit created with the changes."
+echo "Please review the changes with 'jj log' and 'jj diff'."
+
+# --- Manual Steps ---
+# The following steps involve creating tags and moving branches.
+# They are presented here for completeness but should be run manually
+# after you have verified the commit.
+
+# echo "--> To finalize the release, run the following commands:"
+# echo "    # Get the commit ID of the new commit"
+# echo "    COMMIT_ID=$(jj log -r '@' -T '{commit_id}')"
+# echo "    # Set the bookmark"
+# echo "    jj bookmark set update-cue-tool-versions"
+# echo "    # Create the Git tag"
+# echo "    git tag -a '${VERSION}' -m '${COMMIT_HEADLINE}\n\n${COMMIT_BODY}' \$COMMIT_ID"
+# echo "    # Move the main branch"
+# echo "    git branch -f main \$COMMIT_ID"
