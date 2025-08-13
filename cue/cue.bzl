@@ -798,12 +798,7 @@ def _add_common_exported_output_attrs_to(attrs):
         "output_format": attr.string(
             doc = "Output format",
             default = "json",
-            values = [
-                "cue",
-                "json",
-                "text",
-                "yaml",
-            ],
+            values = extension_by_filetype.keys(),
         ),
         "result": attr.output(
             doc = """The built result in the format specified in the "output_format" attribute.""",
@@ -813,14 +808,8 @@ def _add_common_exported_output_attrs_to(attrs):
     return attrs
 
 def _prepare_exported_output_rule(name, **kwargs):
-    extension_by_format = {
-        "cue": "cue",
-        "json": "json",
-        "text": "txt",
-        "yaml": "yaml",
-    }
     output_format = kwargs.get("output_format", "json")
-    result = kwargs.pop("result", name + "." + extension_by_format[output_format])
+    result = kwargs.pop("result", name + "." + extension_by_filetype[output_format])
     return kwargs | {
         "result": result,
     }
