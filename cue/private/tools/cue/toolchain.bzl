@@ -205,7 +205,7 @@ _download_tool = repository_rule(
 )
 
 # buildifier: disable=unnamed-macro
-def declare_bazel_toolchains(version, toolchain_prefix):
+def declare_bazel_toolchains(version, tool_repo_prefix):
     native.constraint_value(
         name = version,
         constraint_setting = "{}:tool_version".format(_CONTAINING_PACKAGE_PREFIX),
@@ -218,7 +218,7 @@ def declare_bazel_toolchains(version, toolchain_prefix):
                 "{}:cpu_{}".format(constraint_value_prefix, platform.arch),
                 "{}:os_{}".format(constraint_value_prefix, platform.os),
             ],
-            toolchain = toolchain_prefix + (":{}_{}_{}".format(platform.os, platform.arch, version)),
+            toolchain = tool_repo_prefix + "-{os}-{arch}//:{os}_{arch}_{version}".format(arch = platform.arch, os = platform.os, version = version),
             toolchain_type = "@{}//tools/cue:toolchain_type".format(_MODULE_REPOSITORY_NAME),
         )
 
@@ -246,10 +246,17 @@ _toolchains_repo = repository_rule(
 )
 
 def download_tool(name, version = None):
-    _download_tool(
-        name = name,
-        version = version,
-    )
+    version = version or _DEFAULT_TOOL_VERSION
+    if version not in _TOOLS_BY_RELEASE:
+        fail("Unexpected version {} for cue tool. Available versions: {}".format(version, ", ".join(_TOOLS_BY_RELEASE.keys())))
+    for platform in _TOOLS_BY_RELEASE[version].keys():
+        repo_name = "{}-{}-{}".format(name, platform.os, platform.arch)
+        _download_tool(
+            name = repo_name,
+            arch = platform.arch,
+            os = platform.os,
+            version = version,
+        )
     _toolchains_repo(
         name = name + "_toolchains",
         tool_repo = name,
