@@ -3,12 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -32,43 +33,44 @@ func fatalf(code int, format string, args ...interface{}) {
 }
 
 func fetchChecksums(version string) (map[string]string, error) {
-	url := fmt.Sprintf("https://github.com/cue-lang/cue/releases/download/%s/checksums.txt", version)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download checksums.txt: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status getting checksums.txt: %s", resp.Status)
+	cmd := exec.Command("gh", "release", "view", "--repo", "cue-lang/cue", version, "--json", "assets")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to execute gh command: %w\n%s", err, stderr.String())
 	}
 
-	checksums := make(map[string]string)
-	scanner := bufio.NewScanner(resp.Body)
+	var release struct {
+		Assets []struct {
+			Name   string `json:"name"`
+			Digest string `json:"digest"`
+		} `json:"assets"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &release); err != nil {
+		return nil, fmt.Errorf("failed to parse gh command output: %w", err)
+	}
+
+	checksums := make(map[string]string, 6)
 	// cue_v0.14.1_linux_amd64.tar.gz -> linux, amd64
 	re := regexp.MustCompile(`cue_` + regexp.QuoteMeta(version) + `_([a-z0-9]+)_([a-z0-9]+)\.(?:tar\.gz|zip)`)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.Fields(line)
-		if len(parts) != 2 {
-			continue
-		}
-		sha, filename := parts[0], parts[1]
-		matches := re.FindStringSubmatch(filename)
+	for _, asset := range release.Assets {
+		matches := re.FindStringSubmatch(asset.Name)
 		if len(matches) != 3 {
 			continue
 		}
 		os, arch := matches[1], matches[2]
 		key := fmt.Sprintf("struct(os = \"%s\", arch = \"%s\")", os, arch)
+		sha := strings.TrimPrefix(asset.Digest, "sha256:")
 		checksums[key] = sha
 	}
 
 	if len(checksums) == 0 {
-		return nil, errors.New("failed to parse any checksums from checksums.txt")
+		return nil, errors.New("failed to parse any checksums from gh command output")
 	}
 
-	return checksums, scanner.Err()
+	return checksums, nil
 }
 
 func writeNewVersionEntry(w io.Writer, version string, checksums map[string]string) {
@@ -87,7 +89,7 @@ func writeNewVersionEntry(w io.Writer, version string, checksums map[string]stri
 			fmt.Fprintf(w, "        %s: \"%s\",\n", p, sha)
 		}
 	}
-	fmt.Fprintln(w, "    },")
+	fmt.Fprintf(w, "    }") // No final newline here
 }
 
 func updateToolchainFile(toolchainFilePath, version string, checksums map[string]string) error {
@@ -98,7 +100,9 @@ func updateToolchainFile(toolchainFilePath, version string, checksums map[string
 
 	var out bytes.Buffer
 
-	updatedDefault, updatedTools := false, false
+	updatedDefault := false
+	inToolsByReleaseBlock := false
+	versionSkipped := false // Flag to indicate if the current version's old entry was skipped
 
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 
@@ -112,19 +116,57 @@ func updateToolchainFile(toolchainFilePath, version string, checksums map[string
 			continue
 		}
 
-		// Add new version checksums
-		if strings.Contains(line, "_TOOLS_BY_RELEASE = {") && !updatedTools {
+		// Detect _TOOLS_BY_RELEASE block
+		if strings.Contains(line, "_TOOLS_BY_RELEASE = {") {
+			inToolsByReleaseBlock = true
 			fmt.Fprintln(&out, line) // Write the `_TOOLS_BY_RELEASE = {` line
 			writeNewVersionEntry(&out, version, checksums)
-			updatedTools = true
+			fmt.Fprintln(&out, ",") // Add a comma after the new entry
+			continue
+		}
+
+		// If inside _TOOLS_BY_RELEASE block, check for existing version entry
+		if inToolsByReleaseBlock {
+			// Skip the old entry for the current version
+			if strings.Contains(line, fmt.Sprintf("\"%s\": {", version)) {
+				versionSkipped = true
+				for scanner.Scan() { // Skip lines until the end of the version block
+					if strings.Contains(scanner.Text(), "},") || strings.Contains(scanner.Text(), "}") {
+						break
+					}
+				}
+				continue
+			}
+
+			// If it's a blank line, skip it
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+
+			// If it's the closing brace of the dictionary, and we skipped the version, don't add a comma
+			if strings.Contains(line, "}") && versionSkipped {
+				fmt.Fprintln(&out, line)
+				inToolsByReleaseBlock = false
+				continue
+			}
+
+			// Add a comma after each entry, except the last one
+			if strings.Contains(line, "},") { // If it's an existing entry, keep its comma
+				fmt.Fprintln(&out, line)
+			} else if strings.Contains(line, "}") { // If it's the last entry, don't add a comma
+				fmt.Fprintln(&out, line)
+				inToolsByReleaseBlock = false
+			} else { // Otherwise, add a comma
+				fmt.Fprintln(&out, line)
+			}
 			continue
 		}
 
 		fmt.Fprintln(&out, line)
 	}
 
-	if !updatedDefault || !updatedTools {
-		return errors.New("failed to find update locations in toolchain.bzl")
+	if !updatedDefault {
+		return errors.New("failed to find _DEFAULT_TOOL_VERSION in toolchain.bzl")
 	}
 
 	return os.WriteFile(toolchainFilePath, out.Bytes(), 0o644)
