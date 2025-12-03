@@ -464,14 +464,24 @@ func generateRules(ctx *ruleGenerationContext) []*rule.Rule {
 // findNearestCueModule searches for a cue.mod directory up the directory tree
 // and returns the label to the cue_module rule.
 func findNearestCueModule(dir, rel string) string {
-	for currentDir, currentRel := dir, rel; currentRel != ""; {
+	currentDir := dir
+	currentRel := rel
+
+	for {
 		cueModPath := filepath.Join(currentDir, "cue.mod")
 		if info, err := os.Stat(cueModPath); err == nil && info.IsDir() {
-			if currentRel == "." {
-				return "//:cue.mod"
+			if currentRel == "" || currentRel == "." {
+				return "//cue.mod:cue.mod"
 			}
 			return fmt.Sprintf("//%s/cue.mod:cue.mod", currentRel)
 		}
+
+		// If we're at the root, we're done
+		if currentRel == "" || currentRel == "." {
+			break
+		}
+
+		// Move up one directory
 		currentDir = filepath.Dir(currentDir)
 		currentRel = filepath.Dir(currentRel)
 		if currentRel == "." {
