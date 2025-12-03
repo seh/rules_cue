@@ -25,3 +25,14 @@ runs:
         --test_output=errors \
         //...
     shell: bash
+  - name: Build bzlmod example
+    run: |
+      cd examples/bzlmod
+      bazel build //...
+    shell: bash
+  - name: Build and test gazelle example
+    run: |
+      cd examples/gazelle
+      bazel build //...
+      bazel test //...
+    shell: bash
