@@ -1,0 +1,19 @@
+load("@rules_cue//cue:cue.bzl", "cue_consolidated_instance", "cue_instance")
+
+cue_instance(
+    name = "api_cue_instance",
+    srcs = [
+        "config.cue",
+        "spec.cue",
+    ],
+    ancestor = "//cue.mod:cue.mod",
+    package_name = "api",
+    visibility = ["//visibility:public"],
+)
+
+cue_consolidated_instance(
+    name = "api_cue_def",
+    instance = ":api_cue_instance",
+    output_format = "cue",
+    visibility = ["//visibility:public"],
+)

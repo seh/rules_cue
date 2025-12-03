@@ -1,0 +1,9 @@
+# Bazel build directories
+bazel-*
+
+# Bazel convenience symlinks
+bazel-bin
+bazel-out
+bazel-testlogs
+bazel-gazelle
+
