@@ -101,7 +101,7 @@ The Gazelle extension is configured in `MODULE.bazel`:
 
 ```python
 bazel_dep(name = "rules_cue", version = "0.0.0")
-bazel_dep(name = "gazelle", version = "0.44.0")
+bazel_dep(name = "gazelle", version = "0.47.0")
 
 # Go dependencies needed for the Gazelle extension
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")

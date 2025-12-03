@@ -21,7 +21,7 @@ See the [examples/gazelle](../../examples/gazelle) directory for a complete work
 
 ```python
 bazel_dep(name = "rules_cue", version = "0.0.0")
-bazel_dep(name = "gazelle", version = "0.44.0")
+bazel_dep(name = "gazelle", version = "0.47.0")
 
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "@rules_cue//:go.mod")

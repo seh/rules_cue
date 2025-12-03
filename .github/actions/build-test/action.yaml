@@ -30,9 +30,10 @@ runs:
       cd examples/bzlmod
       bazel build //...
     shell: bash
-  - name: Build and test gazelle example
+  - name: Build and check gazelle example
     run: |
       cd examples/gazelle
       bazel build //...
-      bazel test //...
+      bazel run //:gazelle
+      bazel run //:gazelle_check
     shell: bash

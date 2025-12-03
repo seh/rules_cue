@@ -13,7 +13,7 @@ This guide will get you up and running with Gazelle for CUE in just a few minute
 
 ```python
 bazel_dep(name = "rules_cue", version = "0.0.0")
-bazel_dep(name = "gazelle", version = "0.44.0")
+bazel_dep(name = "gazelle", version = "0.47.0")
 
 # Set up Go dependencies for Gazelle CUE extension
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
