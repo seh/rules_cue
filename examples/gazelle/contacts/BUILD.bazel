@@ -4,12 +4,12 @@ load("@rules_cue//cue:cue.bzl", "cue_consolidated_instance", "cue_instance")
 
 cue_instance(
     name = "contacts_cue_instance",
+    package_name = "contacts",
     srcs = [
         "data.cue",
         "schema.cue",
     ],
     ancestor = "//cue.mod:cue.mod",
-    package_name = "contacts",
     visibility = ["//visibility:public"],
 )
 

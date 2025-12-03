@@ -21,4 +21,3 @@ use_repo(
     "com_github_iancoleman_strcase",
     "org_cuelang_go",
 )
-

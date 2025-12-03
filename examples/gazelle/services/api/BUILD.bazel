@@ -2,12 +2,12 @@ load("@rules_cue//cue:cue.bzl", "cue_consolidated_instance", "cue_instance")
 
 cue_instance(
     name = "api_cue_instance",
+    package_name = "api",
     srcs = [
         "config.cue",
         "spec.cue",
     ],
     ancestor = "//cue.mod:cue.mod",
-    package_name = "api",
     visibility = ["//visibility:public"],
 )
 
