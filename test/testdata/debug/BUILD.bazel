@@ -1,0 +1,14 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_standalone_files",
+)
+
+exports_files(["debug-golden.json"])
+
+cue_exported_standalone_files(
+    name = "debug",
+    srcs = ["debug.cue"],
+    cue_debug = "sortfields",
+    visibility = ["//test:__subpackages__"],
+)
+
