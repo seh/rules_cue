@@ -3,12 +3,22 @@ load(
     "cue_exported_standalone_files",
 )
 
-exports_files(["debug-golden.json"])
+exports_files([
+    "debug-golden.json",
+    "debug_unsorted-golden.json",
+])
 
+# Without cue_debug - fields stay in original order
+cue_exported_standalone_files(
+    name = "debug_unsorted",
+    srcs = ["debug.cue"],
+    visibility = ["//test:__subpackages__"],
+)
+
+# With cue_debug = "sortfields" - fields are sorted alphabetically
 cue_exported_standalone_files(
     name = "debug",
     srcs = ["debug.cue"],
     cue_debug = "sortfields",
     visibility = ["//test:__subpackages__"],
 )
-
