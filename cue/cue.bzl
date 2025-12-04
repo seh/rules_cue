@@ -71,6 +71,13 @@ def _add_common_output_producing_attrs_to(attrs):
         "concatenate_objects": attr.bool(
             doc = "Concatenate multiple objects into a list.",
         ),
+        "cue_debug": attr.string(
+            doc = """Debug flags to pass to CUE via the CUE_DEBUG environment variable.
+
+The value is a comma-separated list of debug flags. See CUE documentation
+for available debug flags.""",
+            default = "",
+        ),
         # Unfortunately, we can't use a private attribute for an
         # implicit dependency here, because we can't fix the default
         # label value.
@@ -517,6 +524,8 @@ _cue_toolchain_type = "//tools/cue:toolchain_type"
 def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None, module_file = None, instance_directory_path = None, instance_package_name = None, cue_cache_directory_path = None):
     cue_tool = ctx.toolchains[_cue_toolchain_type].cueinfo.tool
     args = ctx.actions.args()
+    if ctx.attr.cue_debug:
+        args.add("-d", ctx.attr.cue_debug)
     if module_file:
         args.add("-m", _runfile_path(ctx, module_file))
         if instance_directory_path:
