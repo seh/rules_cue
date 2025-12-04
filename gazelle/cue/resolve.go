@@ -206,23 +206,6 @@ func indexDomainSpecific(moduleInfo *CueModuleInfo, importPath, pkgName, instanc
 func (cl *cueLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	conf := GetConfig(c)
 	switch r.Kind() {
-	case "cue_library":
-		// Only index cue_library rules if tnarg_rules_cue is enabled
-		if !conf.enableTnargRulesCue {
-			return nil
-		}
-
-		importPath := r.AttrString("importpath")
-		if importPath == "" {
-			return nil
-		}
-
-		return []resolve.ImportSpec{
-			{
-				Lang: cueName,
-				Imp:  importPath,
-			},
-		}
 	case "cue_instance":
 		if pkgName := r.AttrString("package_name"); pkgName != "" {
 			// Get the file package path from the context
@@ -307,14 +290,6 @@ func (cl *cueLang) Embeds(r *rule.Rule, from label.Label) []label.Label {
 // equivalent) for each import according to language-specific rules
 // and heuristics.
 func (cl *cueLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.RemoteCache, r *rule.Rule, imports interface{}, from label.Label) {
-	// Get the configuration
-	conf := GetConfig(c)
-
-	// Skip resolving imports for tnarg_rules_cue rules if not enabled
-	if !conf.enableTnargRulesCue && (r.Kind() == "cue_library" || r.Kind() == "cue_export") {
-		return
-	}
-
 	if imports == nil {
 		return
 	}

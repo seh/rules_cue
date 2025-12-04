@@ -29,48 +29,7 @@ func (cl *cueLang) Name() string { return cueName }
 // found here.
 func (cl *cueLang) Kinds() map[string]rule.KindInfo {
 	return map[string]rule.KindInfo{
-		// @com_github_tnarg_rules_cue kinds
-		"cue_library": {
-			MatchAttrs: []string{"importpath"},
-			NonEmptyAttrs: map[string]bool{
-				"deps": true,
-				"srcs": true,
-			},
-			MergeableAttrs: map[string]bool{
-				"srcs":       true,
-				"importpath": true,
-			},
-			ResolveAttrs: map[string]bool{"deps": true},
-		},
-		"cue_export": {
-			NonEmptyAttrs: map[string]bool{
-				"deps": true,
-				"src":  true,
-			},
-			MergeableAttrs: map[string]bool{
-				"escape":        true,
-				"output_format": false,
-				"src":           true,
-			},
-			ResolveAttrs: map[string]bool{"deps": true},
-		},
-		"cue_repository": {
-			MatchAttrs: []string{"importpath"},
-			NonEmptyAttrs: map[string]bool{
-				"importpath": true,
-				"sha256":     true,
-				"urls":       true,
-			},
-			MergeableAttrs: map[string]bool{
-				"importpath":   true,
-				"sha256":       true,
-				"strip_prefix": true,
-				"type":         true,
-				"urls":         true,
-			},
-		},
-
-		// @com_github_seh_rules_cue kinds
+		// @rules_cue kinds
 		"cue_module": {
 			MatchAttrs: []string{"file"},
 		},
@@ -168,26 +127,6 @@ func (cl *cueLang) Kinds() map[string]rule.KindInfo {
 func (cl *cueLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name: "@com_github_tnarg_rules_cue//cue:deps.bzl",
-			Symbols: []string{
-				"cue_register_toolchains",
-			},
-			After: []string{
-				"gazelle_dependencies",
-			},
-		}, {
-			Name: "@com_github_tnarg_rules_cue//cue:cue.bzl",
-			Symbols: []string{
-				"cue_export",
-				"cue_library",
-				"cue_repository",
-			},
-			After: []string{
-				"cue_register_toolchains",
-			},
-		},
-		//NOTE(yuan): cue_register_toolchains naming conflict
-		{
 			Name: "@rules_cue//cue:deps.bzl",
 			Symbols: []string{
 				"cue_register_toolchains",
@@ -220,14 +159,5 @@ func (cl *cueLang) Loads() []rule.LoadInfo {
 // is called before the file is indexed. Unless c.ShouldFix is true,
 // fixes that delete or rename rules should not be performed.
 func (cl *cueLang) Fix(c *config.Config, f *rule.File) {
-	// Remove cue_library rules if ShouldFix is true
-	if c.ShouldFix {
-		var newRules []*rule.Rule
-		for _, r := range f.Rules {
-			if r.Kind() != "cue_library" {
-				newRules = append(newRules, r)
-			}
-		}
-		f.Rules = newRules
-	}
+	// No fixes needed currently
 }

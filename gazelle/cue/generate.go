@@ -55,10 +55,7 @@ func (cl *cueLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 		baseImportPath:           computeImportPath(args),
 		isCueModDir:              path.Base(args.Dir) == "cue.mod",
 		moduleLabel:              findNearestCueModule(args.Dir, args.Rel),
-		libraries:                make(map[string]*cueLibrary),
-		exports:                  make(map[string]*cueExport),
 		instances:                make(map[string]*cueInstance),
-		enableTnargRulesCue:      conf.enableTnargRulesCue,
 		exportedFiles:            make(map[string]*cueExportedFiles),
 		exportedInstances:        make(map[string]*cueExportedInstance),
 		consolidatedInstances:    make(map[string]*cueConsolidatedInstance),
@@ -120,15 +117,12 @@ type ruleGenerationContext struct {
 	baseImportPath           string
 	isCueModDir              bool
 	moduleLabel              string
-	libraries                map[string]*cueLibrary
-	exports                  map[string]*cueExport
 	instances                map[string]*cueInstance
 	exportedInstances        map[string]*cueExportedInstance
 	exportedFiles            map[string]*cueExportedFiles
 	cueTestRules             map[string]*cueTest
 	exportedGoldenFiles      map[string]*GoldenFile
 	consolidatedInstances    map[string]*cueConsolidatedInstance
-	enableTnargRulesCue      bool
 	genExportedFiles         bool
 	genExportedInstances     bool
 	genConsolidatedInstances bool
@@ -213,19 +207,6 @@ func extractImports(cueFile *ast.File) []string {
 func processStandaloneFile(ctx *ruleGenerationContext, fname string, imports []string) {
 	tgt := exportName(fname)
 
-	// Only create tnarg_rules_cue rules if enabled
-	if ctx.enableTnargRulesCue {
-		export := &cueExport{
-			Name:    tgt,
-			Src:     fname,
-			Imports: make(map[string]bool),
-		}
-		for _, imprt := range imports {
-			export.Imports[imprt] = true
-		}
-		ctx.exports[tgt] = export
-	}
-
 	// if exportedFiles inited, then process exported files
 	if ctx.genExportedFiles {
 		exportedFilesName := fmt.Sprintf("%s_cue_exported_files", tgt)
@@ -253,11 +234,6 @@ func processPackageFile(
 	fname, pkg string,
 	imports []string,
 ) {
-	// For @com_github_tnarg_rules_cue - only if enabled
-	if ctx.enableTnargRulesCue {
-		processTnargLibrary(ctx, fname, pkg, imports)
-	}
-
 	// Process instance
 	instanceTgt := fmt.Sprintf("%s_cue_instance", pkg)
 	instance, ok := ctx.instances[instanceTgt]
@@ -321,30 +297,6 @@ func processPackageFile(
 	}
 }
 
-// Process a library for tnarg rules
-func processTnargLibrary(ctx *ruleGenerationContext, fname string, pkg string, imports []string) {
-	tgt := fmt.Sprintf("cue_%s_library", pkg)
-	lib, ok := ctx.libraries[tgt]
-	if !ok {
-		var importPath string
-		if pkg == ctx.implicitPkgName {
-			importPath = ctx.baseImportPath
-		} else {
-			importPath = fmt.Sprintf("%s:%s", ctx.baseImportPath, pkg)
-		}
-		lib = &cueLibrary{
-			Name:       tgt,
-			ImportPath: importPath,
-			Imports:    make(map[string]bool),
-		}
-		ctx.libraries[tgt] = lib
-	}
-	lib.Srcs = append(lib.Srcs, fname)
-	for _, imprt := range imports {
-		lib.Imports[imprt] = true
-	}
-}
-
 // Generate a cue_module rule
 func generateCueModuleRule(rel string) *rule.Rule {
 	cueModule := &cueModule{
@@ -396,17 +348,6 @@ func genCueTestRule(ctx *ruleGenerationContext, tgt string, exportedFilesName st
 // Generate all rules from the context
 func generateRules(ctx *ruleGenerationContext) []*rule.Rule {
 	var rules []*rule.Rule
-
-	// Generate @com_github_tnarg_rules_cue rules only if enabled
-	if ctx.enableTnargRulesCue {
-		for _, library := range ctx.libraries {
-			rules = append(rules, library.ToRule())
-		}
-
-		for _, export := range ctx.exports {
-			rules = append(rules, export.ToRule())
-		}
-	}
 
 	// Generate @rules_cue instance
 	for _, instance := range ctx.instances {
@@ -578,48 +519,7 @@ func generateEmpty(
 	return empty
 }
 
-type cueLibrary struct {
-	Name       string
-	ImportPath string
-	Srcs       []string
-	Imports    map[string]bool
-}
-
-func (cl *cueLibrary) ToRule() *rule.Rule {
-	rule := rule.NewRule("cue_library", cl.Name)
-	sort.Strings(cl.Srcs)
-	rule.SetAttr("srcs", cl.Srcs)
-	rule.SetAttr("visibility", []string{"//visibility:public"})
-	rule.SetAttr("importpath", cl.ImportPath)
-	var imprts []string
-	for imprt := range cl.Imports {
-		imprts = append(imprts, imprt)
-	}
-	sort.Strings(imprts)
-	rule.SetPrivateAttr(config.GazelleImportsKey, imprts)
-	return rule
-}
-
-type cueExport struct {
-	Name    string
-	Src     string
-	Imports map[string]bool
-}
-
-func (ce *cueExport) ToRule() *rule.Rule {
-	rule := rule.NewRule("cue_export", ce.Name)
-	rule.SetAttr("src", ce.Src)
-	rule.SetAttr("visibility", []string{"//visibility:public"})
-	var imprts []string
-	for imprt := range ce.Imports {
-		imprts = append(imprts, imprt)
-	}
-	sort.Strings(imprts)
-	rule.SetPrivateAttr(config.GazelleImportsKey, imprts)
-	return rule
-}
-
-// New types for @rules_cue rules
+// @rules_cue rule types
 type cueInstance struct {
 	Name         string
 	PackageName  string

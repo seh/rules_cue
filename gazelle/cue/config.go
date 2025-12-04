@@ -17,8 +17,6 @@ type cueConfig struct {
 	// attributes. Set with -go_prefix or # gazelle:prefix.
 	prefix    string
 	prefixRel string
-	// enableTnargRulesCue indicates whether the tnarg_rules_cue should be enabled.
-	enableTnargRulesCue bool
 
 	// cueTestGoldenSuffix is the suffix used for golden test files in CUE tests.
 	// This allows customizing the suffix for generated test files.
@@ -47,7 +45,7 @@ type cueConfig struct {
 // Configurer can interpret. Gazelle prints errors for directives that
 // are not recognized by any Configurer.
 func (s *cueLang) KnownDirectives() []string {
-	return []string{"prefix", "cue_enable_tnarg_rules_cue", "cue_test_golden_suffix", "cue_test_golden_filename", "cue_output_format", "cue_gen_exported_instance"}
+	return []string{"prefix", "cue_test_golden_suffix", "cue_test_golden_filename", "cue_output_format", "cue_gen_exported_instance"}
 }
 
 // RegisterFlags registers command-line flags used by the
@@ -109,8 +107,6 @@ func (s *cueLang) Configure(c *config.Config, rel string, f *rule.File) {
 				}
 				conf.prefix = d.Value
 				conf.prefixRel = rel
-			case "cue_enable_tnarg_rules_cue":
-				conf.enableTnargRulesCue = true
 			case "cue_test_golden_suffix":
 				conf.cueTestGoldenSuffix = d.Value
 				// cue_test depends on exported instance
