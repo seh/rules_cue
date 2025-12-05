@@ -1,0 +1,6 @@
+load("@rules_cue//cue:cue.bzl", "cue_module")
+
+cue_module(
+    name = "cue.mod",
+    visibility = ["//visibility:public"],
+)

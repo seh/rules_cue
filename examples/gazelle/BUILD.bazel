@@ -1,0 +1,32 @@
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/abcue/rules_cue/examples/gazelle
+
+# Run this to update BUILD.bazel files:
+# bazel run //:gazelle
+gazelle(
+    name = "gazelle",
+    gazelle = "@rules_cue//gazelle:gazelle_binary",
+)
+
+# Run this to verify BUILD.bazel files are up to date:
+# bazel run //:gazelle_check
+gazelle(
+    name = "gazelle_check",
+    command = "fix",
+    extra_args = ["-mode=diff"],
+    gazelle = "@rules_cue//gazelle:gazelle_binary",
+)
+
+# Run this to update go dependencies:
+# bazel run //:gazelle_update_repos
+gazelle(
+    name = "gazelle_update_repos",
+    args = [
+        "-from_file=go.mod",
+        "-to_macro=deps.bzl%go_dependencies",
+        "-prune",
+    ],
+    command = "update-repos",
+    gazelle = "@rules_cue//gazelle:gazelle_binary",
+)

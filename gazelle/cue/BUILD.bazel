@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cue",
+    srcs = [
+        "config.go",
+        "cue.go",
+        "generate.go",
+        "resolve.go",
+    ],
+    importpath = "github.com/seh/rules_cue/gazelle/cue",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_iancoleman_strcase//:go_default_library",
+        "@gazelle//config",
+        "@gazelle//label",
+        "@gazelle//language",
+        "@gazelle//pathtools",
+        "@gazelle//repo",
+        "@gazelle//resolve",
+        "@gazelle//rule",
+        "@org_cuelang_go//cue/ast:go_default_library",
+        "@org_cuelang_go//cue/parser:go_default_library",
+    ],
+)

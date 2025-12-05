@@ -1,0 +1,21 @@
+load("@rules_cue//cue:cue.bzl", "cue_consolidated_instance", "cue_instance")
+
+# gazelle:prefix github.com/abcue/rules_cue/examples/gazelle/contacts
+
+cue_instance(
+    name = "contacts_cue_instance",
+    package_name = "contacts",
+    srcs = [
+        "data.cue",
+        "schema.cue",
+    ],
+    ancestor = "//cue.mod:cue.mod",
+    visibility = ["//visibility:public"],
+)
+
+cue_consolidated_instance(
+    name = "contacts_cue_def",
+    instance = ":contacts_cue_instance",
+    output_format = "cue",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,13 @@
+load("@gazelle//:def.bzl", "gazelle_binary")
+
+# gazelle_binary is a Gazelle binary that includes the CUE extension.
+# This can be used in other workspaces by depending on @rules_cue//gazelle:gazelle_binary
+gazelle_binary(
+    name = "gazelle_binary",
+    languages = [
+        "@gazelle//language/go",
+        "@gazelle//language/proto",
+        "//gazelle/cue",
+    ],
+    visibility = ["//visibility:public"],
+)
