@@ -33,7 +33,7 @@ runs:
   - name: Build and check gazelle example
     run: |
       cd examples/gazelle
-      bazel build //...
-      bazel run //:gazelle
       bazel run //:gazelle_check
+      bazel run //:gazelle
+      bazel build //...
     shell: bash
