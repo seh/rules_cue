@@ -212,7 +212,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "YcvjkgxkHTEdFMjdUXZ4OCKbi0rTD7G4kYNDaKc1Ivw=",
+        "bzlTransitiveDigest": "AaZSWE9xhreBT+QFmK7DdTiDwKznjSUXk1hweRRSGjE=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
