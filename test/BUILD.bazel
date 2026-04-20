@@ -72,3 +72,13 @@ cue_test(
     name = "stamp",
     generated_output_file = "//test/testdata/stamp:stamp.json",
 )
+
+cue_test(
+    name = "debug",
+    generated_output_file = "//test/testdata/debug:debug.json",
+)
+
+cue_test(
+    name = "debug_unsorted",
+    generated_output_file = "//test/testdata/debug:debug_unsorted.json",
+)
