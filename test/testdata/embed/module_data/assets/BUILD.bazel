@@ -1,0 +1,4 @@
+exports_files(
+    ["data.json"],
+    visibility = ["//test/testdata/embed/module_data:__subpackages__"],
+)

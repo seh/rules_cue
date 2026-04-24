@@ -1,0 +1,23 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_instance",
+    "cue_instance",
+)
+
+exports_files([
+    "module_data-golden.json",
+])
+
+cue_instance(
+    name = "module_data_instance",
+    srcs = [
+        "module_data.cue",
+    ],
+    ancestor = "//test/testdata/embed/module_data/cue.mod",
+)
+
+cue_exported_instance(
+    name = "module_data",
+    instance = ":module_data_instance",
+    visibility = ["//test:__subpackages__"],
+)

@@ -87,3 +87,8 @@ cue_test(
     name = "embed_transitive",
     generated_output_file = "//test/testdata/embed/transitive/app:app.json",
 )
+
+cue_test(
+    name = "embed_module_data",
+    generated_output_file = "//test/testdata/embed/module_data:module_data.json",
+)

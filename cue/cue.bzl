@@ -317,8 +317,9 @@ _cue_module = rule(
         "data": attr.label_list(
             doc = """Non-CUE files to stage alongside the external-package sources in the sandbox, typically referenced by CUE @embed(...) directives in those sources.
 
-Files are placed in the sandbox at their workspace-relative paths,
-which must reside within the module root so that CUE's embed
+Files are placed in the sandbox at their runfile paths (the
+workspace-relative path within their containing repository), which
+must reside within the enclosing CUE module root so that CUE's embed
 interpreter can resolve them. Module-boundary checks (no parent-
 directory escapes, no symlink escapes) are left to CUE at evaluation
 time.""",
@@ -423,7 +424,7 @@ nominated in this cue_instance's "srcs" attribute.""",
             doc = """Name of the CUE package to load for this instance.
 
 If left unspecified, use the basename of the containing directory as
-the CUE pacakge name.""",
+the CUE package name.""",
         ),
         "srcs": attr.label_list(
             doc = "CUE input files that are part of the nominated CUE package.",
@@ -434,8 +435,9 @@ the CUE pacakge name.""",
         "data": attr.label_list(
             doc = """Non-CUE files to stage alongside "srcs" in the sandbox, typically referenced by CUE @embed(...) directives in this instance's CUE files.
 
-Files are placed in the sandbox at their workspace-relative paths,
-which must reside within the enclosing CUE module so that CUE's embed
+Files are placed in the sandbox at their runfile paths (the
+workspace-relative path within their containing repository), which
+must reside within the enclosing CUE module root so that CUE's embed
 interpreter can resolve them. Module-boundary checks (no parent-
 directory escapes, no symlink escapes) are left to CUE at evaluation
 time.""",
