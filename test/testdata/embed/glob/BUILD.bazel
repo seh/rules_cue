@@ -1,0 +1,27 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_instance",
+    "cue_instance",
+)
+
+exports_files([
+    "glob-golden.json",
+])
+
+cue_instance(
+    name = "glob_instance",
+    srcs = [
+        "glob.cue",
+    ],
+    ancestor = "//test/testdata/embed/cue.mod",
+    data = [
+        "payloads/a.json",
+        "payloads/b.json",
+    ],
+)
+
+cue_exported_instance(
+    name = "glob",
+    instance = ":glob_instance",
+    visibility = ["//test:__subpackages__"],
+)

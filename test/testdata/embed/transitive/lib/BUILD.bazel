@@ -1,0 +1,16 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "lib",
+    srcs = [
+        "lib.cue",
+    ],
+    ancestor = "//test/testdata/embed/cue.mod",
+    data = [
+        "greeting.txt",
+    ],
+    visibility = ["//test/testdata/embed/transitive:__subpackages__"],
+)

@@ -21,6 +21,7 @@ CUEModuleInfo = provider(
         "module_file": """The "module.cue" file in the module directory.""",
         # TODO(seh): Consider abandoning this field in favor of using cue_instance for these.
         "external_package_sources": "The set of files in this CUE module defining external packages.",
+        "external_data_files": "The set of non-CUE files in this CUE module available for CUE @embed references from external packages.",
     },
 )
 
@@ -295,6 +296,9 @@ def _cue_module_impl(ctx):
             external_package_sources = depset(
                 direct = ctx.files.srcs,
             ),
+            external_data_files = depset(
+                direct = ctx.files.data,
+            ),
         ),
     ]
 
@@ -309,6 +313,16 @@ _cue_module = rule(
         "srcs": attr.label_list(
             doc = """Source files defining external packages from the "gen," "pkg," and "usr" directories.""",
             allow_files = [".cue"],
+        ),
+        "data": attr.label_list(
+            doc = """Non-CUE files to stage alongside the external-package sources in the sandbox, typically referenced by CUE @embed(...) directives in those sources.
+
+Files are placed in the sandbox at their workspace-relative paths,
+which must reside within the module root so that CUE's embed
+interpreter can resolve them. Module-boundary checks (no parent-
+directory escapes, no symlink escapes) are left to CUE at evaluation
+time.""",
+            allow_files = True,
         ),
     },
 )
@@ -363,12 +377,13 @@ def _cue_instance_impl(ctx):
             package_name = ctx.attr.package_name or paths.basename(instance_directory_path),
             transitive_files = depset(
                 direct = ctx.files.srcs +
+                         ctx.files.data +
                          ([module.module_file] if not ancestor_instance else []),
                 transitive = [instance.transitive_files for instance in (
                                  [dep[CUEInstanceInfo] for dep in ctx.attr.deps] +
                                  ([ancestor_instance] if ancestor_instance else [])
                              )] +
-                             ([module.external_package_sources] if not ancestor_instance else []),
+                             ([module.external_package_sources, module.external_data_files] if not ancestor_instance else []),
             ),
         ),
     ]
@@ -416,6 +431,16 @@ the CUE pacakge name.""",
             allow_empty = False,
             allow_files = [".cue"],
         ),
+        "data": attr.label_list(
+            doc = """Non-CUE files to stage alongside "srcs" in the sandbox, typically referenced by CUE @embed(...) directives in this instance's CUE files.
+
+Files are placed in the sandbox at their workspace-relative paths,
+which must reside within the enclosing CUE module so that CUE's embed
+interpreter can resolve them. Module-boundary checks (no parent-
+directory escapes, no symlink escapes) are left to CUE at evaluation
+time.""",
+            allow_files = True,
+        ),
     },
 )
 
@@ -457,7 +482,10 @@ def _cue_module_runfiles_impl(ctx):
             files = [module.module_file] +
                     _collect_direct_file_sources(ctx),
             transitive_files = depset(
-                transitive = [module.external_package_sources] +
+                transitive = [
+                                 module.external_package_sources,
+                                 module.external_data_files,
+                             ] +
                              [dep[CUEInstanceInfo].transitive_files for dep in ctx.attr.deps],
             ),
         )),

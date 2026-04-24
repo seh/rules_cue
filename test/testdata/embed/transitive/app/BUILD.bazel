@@ -1,0 +1,26 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_instance",
+    "cue_instance",
+)
+
+exports_files([
+    "app-golden.json",
+])
+
+cue_instance(
+    name = "app_instance",
+    srcs = [
+        "app.cue",
+    ],
+    ancestor = "//test/testdata/embed/cue.mod",
+    deps = [
+        "//test/testdata/embed/transitive/lib",
+    ],
+)
+
+cue_exported_instance(
+    name = "app",
+    instance = ":app_instance",
+    visibility = ["//test:__subpackages__"],
+)

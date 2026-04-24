@@ -1,0 +1,3 @@
+{
+    "template": "server {\n  listen 8080;\n  server_name example.com;\n}\n"
+}

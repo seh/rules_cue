@@ -1,0 +1,12 @@
+{
+    "payloads": {
+        "payloads/a.json": {
+            "name": "a",
+            "value": 1
+        },
+        "payloads/b.json": {
+            "name": "b",
+            "value": 2
+        }
+    }
+}

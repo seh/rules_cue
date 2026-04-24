@@ -1,0 +1,26 @@
+load(
+    "//cue:cue.bzl",
+    "cue_exported_instance",
+    "cue_instance",
+)
+
+exports_files([
+    "basic-golden.json",
+])
+
+cue_instance(
+    name = "basic_instance",
+    srcs = [
+        "basic.cue",
+    ],
+    ancestor = "//test/testdata/embed/cue.mod",
+    data = [
+        "default.conf.template",
+    ],
+)
+
+cue_exported_instance(
+    name = "basic",
+    instance = ":basic_instance",
+    visibility = ["//test:__subpackages__"],
+)

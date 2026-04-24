@@ -72,3 +72,18 @@ cue_test(
     name = "stamp",
     generated_output_file = "//test/testdata/stamp:stamp.json",
 )
+
+cue_test(
+    name = "embed_basic",
+    generated_output_file = "//test/testdata/embed/basic:basic.json",
+)
+
+cue_test(
+    name = "embed_glob",
+    generated_output_file = "//test/testdata/embed/glob:glob.json",
+)
+
+cue_test(
+    name = "embed_transitive",
+    generated_output_file = "//test/testdata/embed/transitive/app:app.json",
+)
