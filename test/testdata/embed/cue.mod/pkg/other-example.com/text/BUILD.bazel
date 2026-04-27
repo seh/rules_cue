@@ -1,0 +1,14 @@
+load("//cue:cue.bzl", "cue_instance")
+
+cue_instance(
+    name = "text",
+    package_name = "text",
+    srcs = [
+        "text.cue",
+    ],
+    ancestor = "//test/testdata/embed/cue.mod",
+    embedsrcs = [
+        "letter-counts.json",
+    ],
+    visibility = ["//test/testdata/embed:__subpackages__"],
+)

@@ -9,6 +9,16 @@ cue_test(
 )
 
 cue_test(
+    name = "embed_length",
+    generated_output_file = "//test/testdata/embed/words/length:length.yaml",
+)
+
+cue_test(
+    name = "embed_def",
+    generated_output_file = "//test/testdata/embed/words/length:length_def.cue",
+)
+
+cue_test(
     name = "hello_world_hello_world",
     generated_output_file = "//test/testdata/hello_world:hello_world.json",
 )

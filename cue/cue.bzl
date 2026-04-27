@@ -41,6 +41,10 @@ def _replacer_if_stamping(stamping_policy):
 
 def _add_common_source_consuming_attrs_to(attrs):
     attrs.update({
+        "embedsrcs": attr.label_list(
+            doc = "Input files made available for embedding via the `@embed` attribute.",
+            allow_files = True,
+        ),
         "qualified_srcs": attr.label_keyed_string_dict(
             doc = """Additional input files that are not part of a CUE package, each together with a qualifier.
 
@@ -293,7 +297,7 @@ def _cue_module_impl(ctx):
         CUEModuleInfo(
             module_file = module_file,
             external_package_sources = depset(
-                direct = ctx.files.srcs,
+                direct = ctx.files.embedsrcs + ctx.files.srcs,
             ),
         ),
     ]
@@ -305,6 +309,10 @@ _cue_module = rule(
             doc = "module.cue file for this CUE module.",
             allow_single_file = [".cue"],
             mandatory = True,
+        ),
+        "embedsrcs": attr.label_list(
+            doc = "Input files made available for embedding via the `@embed` attribute.",
+            allow_files = True,
         ),
         "srcs": attr.label_list(
             doc = """Source files defining external packages from the "gen," "pkg," and "usr" directories.""",
@@ -358,11 +366,15 @@ def _cue_instance_impl(ctx):
     return [
         CUEInstanceInfo(
             directory_path = instance_directory_path,
+            # NB: Omit the "embedsrcs" attribute's contribution here
+            # deliberately, and include those files only in the
+            # "transitive_files" depset as direct dependencies.
             files = ctx.files.srcs,
             module = module,
             package_name = ctx.attr.package_name or paths.basename(instance_directory_path),
             transitive_files = depset(
-                direct = ctx.files.srcs +
+                direct = ctx.files.embedsrcs +
+                         ctx.files.srcs +
                          ([module.module_file] if not ancestor_instance else []),
                 transitive = [instance.transitive_files for instance in (
                                  [dep[CUEInstanceInfo] for dep in ctx.attr.deps] +
@@ -404,11 +416,15 @@ If left unspecified, use the directory containing the first CUE file
 nominated in this cue_instance's "srcs" attribute.""",
             allow_single_file = True,
         ),
+        "embedsrcs": attr.label_list(
+            doc = "Input files made available for embedding via the `@embed` attribute.",
+            allow_files = True,
+        ),
         "package_name": attr.string(
             doc = """Name of the CUE package to load for this instance.
 
 If left unspecified, use the basename of the containing directory as
-the CUE pacakge name.""",
+the CUE package name.""",
         ),
         "srcs": attr.label_list(
             doc = "CUE input files that are part of the nominated CUE package.",
@@ -431,7 +447,8 @@ def _call_rule_after(name, rule_fn, prepare_fns = [], **kwargs):
     )
 
 def _collect_direct_file_sources(ctx):
-    files = list(ctx.files.srcs)
+    files = list(ctx.files.embedsrcs)
+    files.extend(ctx.files.srcs)
     for k, _ in ctx.attr.qualified_srcs.items():
         file = _file_from_label_keyed_string_dict_key(k)
         if file not in files:
@@ -661,6 +678,7 @@ def _prepare_consolidated_output_rule(name, **kwargs):
 
 def _prepare_module_consuming_rule(name, **kwargs):
     deps = kwargs.get("deps", [])
+    embedsrcs = kwargs.get("embedsrcs", [])
     module = kwargs["module"]
     qualified_srcs = kwargs.get("qualified_srcs", {})
     srcs = kwargs.get("srcs", [])
@@ -670,6 +688,7 @@ def _prepare_module_consuming_rule(name, **kwargs):
     _cue_module_runfiles(
         name = runfiles_name,
         deps = deps,
+        embedsrcs = embedsrcs,
         module = module,
         srcs = srcs,
         qualified_srcs = qualified_srcs,
@@ -681,6 +700,7 @@ def _prepare_module_consuming_rule(name, **kwargs):
 
 def _prepare_instance_consuming_rule(name, **kwargs):
     instance = kwargs["instance"]
+    embedsrcs = kwargs.get("embedsrcs", [])
     qualified_srcs = kwargs.get("qualified_srcs", {})
     srcs = kwargs.get("srcs", [])
     tags = kwargs.get("tags", [])
@@ -688,6 +708,7 @@ def _prepare_instance_consuming_rule(name, **kwargs):
     runfiles_name = name + "_cue_runfiles"
     _cue_instance_runfiles(
         name = runfiles_name,
+        embedsrcs = embedsrcs,
         instance = instance,
         srcs = srcs,
         qualified_srcs = qualified_srcs,
@@ -698,6 +719,7 @@ def _prepare_instance_consuming_rule(name, **kwargs):
     }
 
 def _prepare_standalone_rule(name, **kwargs):
+    embedsrcs = kwargs.get("embedsrcs", [])
     qualified_srcs = kwargs.get("qualified_srcs", {})
     srcs = kwargs.get("srcs", [])
     tags = kwargs.get("tags", [])
@@ -705,6 +727,7 @@ def _prepare_standalone_rule(name, **kwargs):
     runfiles_name = name + "_cue_runfiles"
     _cue_standalone_runfiles(
         name = runfiles_name,
+        embedsrcs = embedsrcs,
         srcs = srcs,
         qualified_srcs = qualified_srcs,
         tags = tags,

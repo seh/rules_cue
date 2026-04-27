@@ -1,0 +1,17 @@
+load(
+    "//cue:cue.bzl",
+    "cue_instance",
+)
+
+cue_instance(
+    name = "words",
+    package_name = "words",
+    srcs = [
+        "words.cue",
+    ],
+    ancestor = "//test/testdata/embed/cue.mod",
+    embedsrcs = [
+        "favorite-words.json",
+    ],
+    visibility = [":__subpackages__"],
+)

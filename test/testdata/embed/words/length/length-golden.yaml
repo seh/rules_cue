@@ -1,0 +1,5 @@
+description: |
+  Count of constituent letters in each of our favorite words
+favoriteWordsLetterCounts:
+  dog: 3
+  moose: 5
