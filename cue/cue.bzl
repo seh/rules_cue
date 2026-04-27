@@ -181,13 +181,13 @@ def _file_from_label_keyed_string_dict_key(k):
     # label_list attribute.
     files = k.files.to_list()
     if len(files) != 1:
-        fail(msg = "Unexpected number of files in target {}: {}".format(k, len(files)))
+        fail("Unexpected number of files in target {}: {}".format(k, len(files)))
     return files[0]
 
 def _collect_packageless_file_path(ctx, file, lines):
     p = _runfile_path(ctx, file)
     if p.find(":") != -1:
-        fail(msg = "CUE rejects file paths that contain a colon (:): {}".format(p))
+        fail("CUE rejects file paths that contain a colon (:): {}".format(p))
     lines.append(p + "\n")
 
 def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packageless_files_file):
@@ -199,7 +199,7 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
         args.add("--expression", ctx.attr.expression)
     for k, v in ctx.attr.inject.items():
         if len(k) == 0:
-            fail(msg = "injected key must not empty")
+            fail("injected key must not empty")
         if stamping_enabled and v.startswith("{") and v.endswith("}"):
             required_stamp_bindings[k] = v[1:-1]
             continue
@@ -210,7 +210,7 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
         )
     for v in ctx.attr.inject_shorthand:
         if len(v) == 0:
-            fail(msg = "injected value must not empty")
+            fail("injected value must not empty")
         args.add("--inject", v)
     if ctx.attr.concatenate_objects:
         args.add("--list")
@@ -224,7 +224,7 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
         args.add("--package", ctx.attr.non_cue_file_package_name)
     for p in ctx.attr.path:
         if not p:
-            fail(msg = "path element must not be empty")
+            fail("path element must not be empty")
         args.add("--path", p)
     if ctx.attr.with_context:
         args.add("--with-context")
@@ -283,12 +283,12 @@ def _cue_module_impl(ctx):
     module_file = ctx.file.file
     expected_module_file = "module.cue"
     if module_file.basename != expected_module_file:
-        fail(msg = """supplied CUE module file is not named "{}"; got "{}" instead""".format(expected_module_file, module_file.basename))
+        fail("""supplied CUE module file is not named "{}"; got "{}" instead""".format(expected_module_file, module_file.basename))
     expected_module_directory = "cue.mod"
 
     directory = paths.basename(module_file.dirname)
     if directory != expected_module_directory:
-        fail(msg = """supplied CUE module directory is not named "{}"; got "{}" instead""".format(expected_module_directory, directory))
+        fail("""supplied CUE module directory is not named "{}"; got "{}" instead""".format(expected_module_directory, directory))
     return [
         CUEModuleInfo(
             module_file = module_file,
@@ -342,7 +342,7 @@ def _cue_instance_impl(ctx):
         for dep in ctx.attr.deps:
             instance = dep[CUEInstanceInfo]
             if instance.module != module:
-                fail(msg = """dependency {} of instance {} is not part of CUE module "{}"; got "{}" instead""".format(dep, ctx.label, module, dep.module))
+                fail("""dependency {} of instance {} is not part of CUE module "{}"; got "{}" instead""".format(dep, ctx.label, module, dep.module))
 
     instance_directory_path = _cue_instance_directory_path(ctx)
     module_root_directory = _cue_module_root_directory_path(ctx, module)
@@ -350,7 +350,7 @@ def _cue_instance_impl(ctx):
             # The CUE module may be at the root of the Bazel workspace.
             not module_root_directory or
             instance_directory_path.startswith(module_root_directory + "/")):
-        fail(msg = "directory {} for instance {} is not dominated by the module root directory {}".format(
+        fail("directory {} for instance {} is not dominated by the module root directory {}".format(
             instance_directory_path,
             ctx.label,
             module_root_directory,
@@ -524,9 +524,9 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
             if instance_package_name:
                 args.add("-p", instance_package_name)
     elif instance_directory_path:
-        fail(msg = "CUE instance directory path provided without a module directory path")
+        fail("CUE instance directory path provided without a module directory path")
     elif instance_package_name:
-        fail(msg = "CUE package name provided without an instance directory path")
+        fail("CUE package name provided without an instance directory path")
     if cue_cache_directory_path:
         args.add("-c", cue_cache_directory_path)
     args.add(cue_tool.path)
