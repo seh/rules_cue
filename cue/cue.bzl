@@ -908,3 +908,144 @@ def cue_exported_instance(name, **kwargs):
         ],
         **kwargs
     )
+
+def _cue_vet_test_impl(ctx):
+    instance = ctx.attr.instance[CUEInstanceInfo]
+    module = instance.module
+    cue_tool = ctx.toolchains[_cue_toolchain_type].cueinfo.tool
+
+    data_files = []
+    for t in ctx.attr.data:
+        data_files.extend(t.files.to_list())
+
+    module_file_rlocation = _runfile_path(ctx, module.module_file)
+
+    # Build module-relative instance path (same logic as _make_instance_consuming_action)
+    module_root_directory = _cue_module_root_directory_path(ctx, module)
+    relative_instance_path = paths.relativize(instance.directory_path, module_root_directory)
+    if relative_instance_path == instance.directory_path:
+        relative_instance_path = "."
+    else:
+        relative_instance_path = "./" + relative_instance_path
+
+    if instance.package_name:
+        instance_arg = relative_instance_path + ":" + instance.package_name
+    else:
+        instance_arg = relative_instance_path
+
+    # Build data file rlocation lines
+    data_rlocation_lines = "\n".join([
+        'data_files+=("$(rlocation {})")'.format(_runfile_path(ctx, f))
+        for f in data_files
+    ])
+
+    # Build -d expression flags (single-quoted to avoid shell injection)
+    schema_expr_lines = "\n".join([
+        "vet_args+=('-d' '{}')".format(expr.replace("'", "'\\''"))
+        for expr in ctx.attr.schema_expression
+    ])
+
+    concrete_flag = "'-c'" if ctx.attr.concrete else ""
+
+    runfiles_boilerplate = """\
+# Copy-pasted from the Bazel Bash runfiles library v2.
+set -uo pipefail; set +e; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \\
+  source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \\
+  source "$0.runfiles/$f" 2>/dev/null || \\
+  source "$(grep -sm1 "^$f " "$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \\
+  source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \\
+  { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e"""
+
+    script_content = """\
+#!/usr/bin/env bash
+{runfiles_boilerplate}
+
+set -euo pipefail
+
+# Set up a temporary CUE cache dir and clean it up on exit
+cue_cache_dir="$(mktemp -d -t cue-vet-XXXXXX)"
+trap "rm -rf '${{cue_cache_dir}}'" EXIT
+export CUE_CACHE_DIR="${{cue_cache_dir}}"
+
+# Resolve the CUE tool
+CUE="$(rlocation {cue_tool_rlocation})"
+
+# Resolve data files
+data_files=()
+{data_rlocation_lines}
+
+# Resolve module file and cd to module root
+module_file="$(rlocation {module_file_rlocation})"
+module_root="$(dirname "$(dirname "${{module_file}}")")"
+cd "${{module_root}}"
+
+# Build vet args
+vet_args=()
+{concrete_line}
+{schema_expr_lines}
+
+exec "${{CUE}}" vet "${{vet_args[@]+"${{vet_args[@]}}}}" {instance_arg} "${{data_files[@]}}"
+""".format(
+        runfiles_boilerplate = runfiles_boilerplate,
+        cue_tool_rlocation = _runfile_path(ctx, cue_tool),
+        data_rlocation_lines = data_rlocation_lines,
+        module_file_rlocation = module_file_rlocation,
+        concrete_line = 'vet_args+=({})'.format(concrete_flag) if concrete_flag else "# concrete flag not set",
+        schema_expr_lines = schema_expr_lines if schema_expr_lines else "# no schema expressions",
+        instance_arg = instance_arg,
+    )
+
+    script = ctx.actions.declare_file(ctx.label.name + "_vet_test.sh")
+    ctx.actions.write(
+        output = script,
+        content = script_content,
+        is_executable = True,
+    )
+
+    bash_runfiles = ctx.attr._bash_runfiles[DefaultInfo].default_runfiles
+
+    return [
+        DefaultInfo(
+            executable = script,
+            runfiles = ctx.runfiles(
+                files = [cue_tool, script] + data_files,
+                transitive_files = instance.transitive_files,
+            ).merge(bash_runfiles),
+        ),
+    ]
+
+cue_vet_test = rule(
+    implementation = _cue_vet_test_impl,
+    test = True,
+    attrs = {
+        "instance": attr.label(
+            doc = """CUE instance to validate.
+
+This value must refer either to a target using the cue_instance rule
+or another rule that yields a CUEInstanceInfo provider.""",
+            providers = [CUEInstanceInfo],
+            mandatory = True,
+        ),
+        "data": attr.label_list(
+            doc = "Data files (YAML, JSON) to validate against the CUE instance.",
+            mandatory = True,
+            allow_empty = False,
+            allow_files = [".yaml", ".yml", ".json"],
+        ),
+        "schema_expression": attr.string_list(
+            doc = """CUE expressions selecting the schema(s) to validate against.
+
+Each expression is passed as a "-d" flag to "cue vet".""",
+            default = [],
+        ),
+        "concrete": attr.bool(
+            doc = "Require all values to be concrete (passes -c to cue vet).",
+            default = True,
+        ),
+        "_bash_runfiles": attr.label(
+            default = Label("@bazel_tools//tools/bash/runfiles"),
+        ),
+    },
+    toolchains = [_cue_toolchain_type],
+)

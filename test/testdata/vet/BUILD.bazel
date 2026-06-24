@@ -1,0 +1,15 @@
+load("//cue:cue.bzl", "cue_instance", "cue_vet_test")
+
+cue_instance(
+    name = "vet_test_instance",
+    srcs = ["schema.cue"],
+    package_name = "vet_test",
+    ancestor = "//test/testdata/vet/cue.mod:vet_test_module",
+)
+
+cue_vet_test(
+    name = "valid_config_test",
+    instance = ":vet_test_instance",
+    data = ["valid.yaml"],
+    schema_expression = ["#Config"],
+)
