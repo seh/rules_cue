@@ -947,6 +947,18 @@ def _cue_vet_test_impl(ctx):
 
     concrete_flag = "'-c'" if ctx.attr.concrete else ""
 
+    # Choose invocation style based on should_fail (known at analysis time)
+    if ctx.attr.should_fail:
+        vet_invocation = """\
+if "${{CUE}}" vet "${{vet_args[@]+"${{vet_args[@]}}}}" {instance_arg} "${{data_files[@]}}"; then
+  echo >&2 "cue vet succeeded but failure was expected"
+  exit 1
+else
+  exit 0
+fi"""
+    else:
+        vet_invocation = 'exec "${{CUE}}" vet "${{vet_args[@]+"${{vet_args[@]}}}}" {instance_arg} "${{data_files[@]}}"'
+
     runfiles_boilerplate = """\
 # Copy-pasted from the Bazel Bash runfiles library v2.
 set -uo pipefail; set +e; f=bazel_tools/tools/bash/runfiles/runfiles.bash
@@ -985,7 +997,7 @@ vet_args=()
 {concrete_line}
 {schema_expr_lines}
 
-exec "${{CUE}}" vet "${{vet_args[@]+"${{vet_args[@]}}}}" {instance_arg} "${{data_files[@]}}"
+{vet_invocation}
 """.format(
         runfiles_boilerplate = runfiles_boilerplate,
         cue_tool_rlocation = _runfile_path(ctx, cue_tool),
@@ -994,6 +1006,7 @@ exec "${{CUE}}" vet "${{vet_args[@]+"${{vet_args[@]}}}}" {instance_arg} "${{data
         concrete_line = 'vet_args+=({})'.format(concrete_flag) if concrete_flag else "# concrete flag not set",
         schema_expr_lines = schema_expr_lines if schema_expr_lines else "# no schema expressions",
         instance_arg = instance_arg,
+        vet_invocation = vet_invocation.format(instance_arg = instance_arg),
     )
 
     script = ctx.actions.declare_file(ctx.label.name + "_vet_test.sh")
@@ -1042,6 +1055,10 @@ Each expression is passed as a "-d" flag to "cue vet".""",
         "concrete": attr.bool(
             doc = "Require all values to be concrete (passes -c to cue vet).",
             default = True,
+        ),
+        "should_fail": attr.bool(
+            doc = "When True, the test passes if cue vet exits non-zero (i.e. validation fails as expected).",
+            default = False,
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),

@@ -13,3 +13,11 @@ cue_vet_test(
     data = ["valid.yaml"],
     schema_expression = ["#Config"],
 )
+
+cue_vet_test(
+    name = "invalid_config_test",
+    instance = ":vet_test_instance",
+    data = ["invalid.yaml"],
+    schema_expression = ["#Config"],
+    should_fail = True,
+)
