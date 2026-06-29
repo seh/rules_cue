@@ -215,7 +215,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "AaZSWE9xhreBT+QFmK7DdTiDwKznjSUXk1hweRRSGjE=",
+        "bzlTransitiveDigest": "EYraWvlphTfZ+GFkhahHRiljueNt1ZXzp68z18VNomo=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
