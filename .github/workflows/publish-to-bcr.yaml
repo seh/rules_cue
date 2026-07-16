@@ -1,0 +1,39 @@
+name: Publish Release to the BCR
+on:
+  # Run the publish workflow after a successful release.
+  workflow_call:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+  # In case of problems, allow retrying by dispatching the workflow
+  # from the GitHub UI or API manually.
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+jobs:
+  publish:
+    uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v1.4.2
+    with:
+      tag_name: ${{ inputs.tag_name }}
+      # GitHub repository which is a fork of the upstream where the
+      # Pull Request will be opened.
+      registry_fork: seh/bazel-central-registry
+      # Until we upload release artifacts with the name
+      # "release_files" (and, similarly, "release_notes"), disable
+      # this option, and allow the workflow to download the artifacts
+      # using the release URL.
+      download_default_release_artifacts: false
+      attest: false # TODO(seh): Consider supporting this option.
+    permissions:
+      contents: write
+      # "write" permission is necessary if "attest" is true.
+      id-token: none
+      # "write" permission is necessary if "attest" is true.
+      attestations: none
+    secrets:
+      # This token is necessary to push to the BCR fork, and to open a
+      # pull request against a registry.
+      publish_token: ${{ secrets.BCR_PUBLISH_TOKEN }}

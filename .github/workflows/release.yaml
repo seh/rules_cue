@@ -6,10 +6,11 @@ on:
     - "v*.*.*"
 jobs:
   release:
+    name: Publish a GitHub release
     runs-on: ubuntu-latest
     steps:
     - name: Check out VCS repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
     - name: Build and test all Bazel targets
       uses: ./.github/actions/build-test
     # Work around lack of the annotated tag for the motivating tag
@@ -31,6 +32,7 @@ jobs:
             --no-tags \
             +refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}
     - name: Prepare release notes and artifacts
+      id: prepare_release
       run: |
         gh_repository='${{ github.repository }}'
         tag_name='${{ github.ref_name }}'
@@ -38,10 +40,19 @@ jobs:
           "${gh_repository#*/}" \
           "${tag_name}" \
         > release-notes.txt
+        echo "tag_name=${tag_name}" >> "${GITHUB_OUTPUT}"
     - name: Issue release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         generate_release_notes: true
         body_path: release-notes.txt
         files: vcs-archive-*.tar.gz
         fail_on_unmatched_files: true
+    outputs:
+      released_tag_name: ${{ steps.prepare_release.outputs.tag_name }}
+  call-release-to-bcr:
+    name: Induce publishing a release to the BCR
+    needs: release
+    uses: ./.github/workflows/publish-to-bcr.yaml
+    with:
+      tag_name: ${{ needs.release.outputs.released_tag_name }}
