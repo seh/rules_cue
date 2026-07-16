@@ -9,7 +9,7 @@ bazel_dep(name = "rules_go", version = "0.61.1")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
-    version = "1.26.4",
+    version = "1.26.5",
 )
 
 bazel_dep(name = "rules_shell", version = "0.8.0")
