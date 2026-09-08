@@ -653,6 +653,7 @@ def _add_common_consolidated_output_attrs_to(attrs):
                 "cue",
                 "json",
                 "text",
+                "toml",
                 "yaml",
             ],
         ),
@@ -668,6 +669,7 @@ def _prepare_consolidated_output_rule(name, **kwargs):
         "cue": "cue",
         "json": "json",
         "text": "txt",
+        "toml": "toml",
         "yaml": "yaml",
     }
     output_format = kwargs.get("output_format", "cue")
@@ -820,6 +822,7 @@ def _add_common_exported_output_attrs_to(attrs):
                 "cue",
                 "json",
                 "text",
+                "toml",
                 "yaml",
             ],
         ),
@@ -835,6 +838,7 @@ def _prepare_exported_output_rule(name, **kwargs):
         "cue": "cue",
         "json": "json",
         "text": "txt",
+        "toml": "toml",
         "yaml": "yaml",
     }
     output_format = kwargs.get("output_format", "json")

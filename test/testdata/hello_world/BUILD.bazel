@@ -5,6 +5,7 @@ load(
 
 exports_files([
     "hello_world-golden.json",
+    "hello_world-golden.toml",
     "message-golden.txt",
     "de-golden.json",
     "en-golden.json",
@@ -16,6 +17,15 @@ cue_exported_files(
     name = "hello_world",
     srcs = ["hello_world.cue"],
     module = _MODULE,
+    visibility = ["//test:__subpackages__"],
+)
+
+cue_exported_files(
+    name = "hello_world_toml",
+    srcs = ["hello_world.cue"],
+    module = _MODULE,
+    output_format = "toml",
+    result = "hello_world.toml",
     visibility = ["//test:__subpackages__"],
 )
 
