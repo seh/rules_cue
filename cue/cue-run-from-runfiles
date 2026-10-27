@@ -10,20 +10,22 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 
 function usage() {
-  printf "usage: %s [-c cue_cache_directory] [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  printf "usage: %s [-c cue_cache_directory] [-d cue_debug] [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
   exit 2
 }
 
 cue_cache_directory=
+cue_debug=
 instance_path=
 module_file=
 package_name=
 
 function parse_args() {
-  while getopts c:i:m:p: name
+  while getopts c:d:i:m:p: name
   do
     case "${name}" in
       c) cue_cache_directory="${OPTARG}";;
+      d) cue_debug="${OPTARG}";;
       i) instance_path="${OPTARG}";;
       h) usage;;
       m) module_file="${OPTARG}";;
@@ -101,6 +103,10 @@ elif [ -z "${HOME:-}" ]; then
   cue_cache_directory="$(mktemp -d -t cue-XXXXXX)"
   trap "rm -rf '${cue_cache_directory}'" EXIT
   export CUE_CACHE_DIR="${cue_cache_directory}"
+fi
+
+if [ -n "${cue_debug}" ]; then
+  export CUE_DEBUG="${cue_debug}"
 fi
 
 # NB: See https://stackoverflow.com/questions/7577052 for the odd

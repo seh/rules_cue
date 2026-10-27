@@ -10,18 +10,20 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 
 function usage() {
-  printf "usage: %s [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  printf "usage: %s [-d cue_debug] [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
   exit 2
 }
 
+cue_debug=
 instance_path=
 module_file=
 package_name=
 
 function parse_args() {
-  while getopts i:m:p: name
+  while getopts d:i:m:p: name
   do
     case "${name}" in
+      d) cue_debug="${OPTARG}";;
       i) instance_path="${OPTARG}";;
       h) usage;;
       m) module_file="${OPTARG}";;
@@ -99,6 +101,10 @@ cd "${cue_src_dir}"
 if [ -n "${module_file}" ]; then
   module_path="$(dirname $(dirname ${module_file}))"
   cd "${module_path}"
+fi
+
+if [ -n "${cue_debug}" ]; then
+  export CUE_DEBUG="${cue_debug}"
 fi
 
 # NB: See https://stackoverflow.com/questions/7577052 for the odd
