@@ -10,7 +10,7 @@ _TOOLS_BY_RELEASE = {
         struct(os = "linux", arch = "arm64"): "0d729be30d52c952ca38fc9dcb692caa09d8463fa0b64df5781312779183fbcd",
         struct(os = "windows", arch = "amd64"): "9f15378dc52b9a1bb6fa1755adc0410c9f17f330a621b784a5b31fdbc91c6d7a",
         struct(os = "windows", arch = "arm64"): "db88b2c302be1829e653e20ea87e3f1adc10ae2052d58fe87d21d0ed97102e51",
-    },    
+    },
     "v0.17.0": {
         struct(os = "darwin", arch = "amd64"): "f308f5189b5fd233d5af807a7d86d4106ec73c247852eff50245820af49b4b46",
         struct(os = "darwin", arch = "arm64"): "d49d4f97ec1db68f1b3e527a78be06a28f3f1b1ca7b5e6902a605450162e5314",
@@ -18,7 +18,7 @@ _TOOLS_BY_RELEASE = {
         struct(os = "linux", arch = "arm64"): "f4218d82d2903700ee44615172642146f49c8ddcc3809a46fce6cbd0e5baefa6",
         struct(os = "windows", arch = "amd64"): "5ee7c2a1ad13b8ed7521b164532e48c8bc1618b500ac3c5808cbbd47d4c9ccb8",
         struct(os = "windows", arch = "arm64"): "cefcfc8aad2cd6374512f45975fb8cd0dc69dcb6e3c2ca2022e2e1761f5fb858",
-    },    
+    },
     "v0.16.1": {
         struct(os = "darwin", arch = "amd64"): "97b0d78e4c5ee49ff72145fd6ef4f4bab0bb332d55f29660de3fec2af5ec96a9",
         struct(os = "darwin", arch = "arm64"): "a72b0cddb377c52d1b003bed9a335d893b70cd75a182cd5e3fee8bae30ddb6d6",
