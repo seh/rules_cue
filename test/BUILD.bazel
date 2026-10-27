@@ -24,6 +24,11 @@ cue_test(
 )
 
 cue_test(
+    name = "hello_world_toml",
+    generated_output_file = "//test/testdata/hello_world:hello_world.toml",
+)
+
+cue_test(
     name = "hello_world_message",
     generated_output_file = "//test/testdata/hello_world:message.txt",
 )
