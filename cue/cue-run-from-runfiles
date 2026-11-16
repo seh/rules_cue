@@ -92,7 +92,21 @@ if ((${#packageless_file_args[@]} == 0)); then
 fi
 
 if [ -n "${module_file}" ]; then
-  adjusted_module_file="$(rlocation "${module_file}")"
+  # NB: Prefer using a CUE module root directory that sits within the
+  # runfiles tree, especially for when Bazel invokes this program in
+  # an action without a sandbox. In that "unsandboxed" case, the
+  # "rlocation" function yields paths—drawn from the runfiles manifest
+  # file—that sit within the workspace source tree. If we call that
+  # function and discover the "cue.mod/module.cue" file in the
+  # workspace source tree, and walk upward to its grandparent
+  # directory to use as the CUE module root directory, we wind up
+  # exposing the "cue" command to extra files that we did not declare
+  # as inputs to the action.
+  if [ -n "${RUNFILES_DIR:-}" ] && [ -e "${RUNFILES_DIR}/${module_file}" ]; then
+    adjusted_module_file="${RUNFILES_DIR}/${module_file}"
+  else
+    adjusted_module_file="$(rlocation "${module_file}")"
+  fi
   if [ -z "${adjusted_module_file}" ]; then
     echo >&2 "No runfile path available for module file path \"${module_file}\"."
     exit 1
