@@ -70,7 +70,14 @@ while read -r line; do
       echo >&2 "No runfile path available for file path \"${line}\"."
       exit 1
     fi
-    packageless_file_args+=("${oldwd}/${adjusted_packageless_file}")
+    # The "rlocation" function may return either relative or absolute
+    # paths. If the path is relative, ensure that we resolve it
+    # against this process's original working directory even if we
+    # wind up changing that working directory later.
+    if [[ "${adjusted_packageless_file}" != /* ]]; then
+      adjusted_packageless_file="${oldwd}/${adjusted_packageless_file}"
+    fi
+    packageless_file_args+=("${adjusted_packageless_file}")
   fi
 done <"${packageless_files_file}"
 if [ -n "${qualifier}" ]; then
