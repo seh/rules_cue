@@ -103,6 +103,11 @@ if [ -n "${module_file}" ]; then
   cd "${module_path}"
 fi
 
+extra_args=()
+while IFS= read -r arg; do
+  extra_args+=("${arg}")
+done <"${oldwd}/${extra_args_file}"
+
 # NB: See https://stackoverflow.com/questions/7577052 for the odd
 # treatment of the "packageless_file_args" array variable here,
 # handling the case where the array winds up empty for lack of
@@ -112,5 +117,5 @@ fi
 "${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
   ${instance_path:+"${instance_path}${package_name:+:${package_name}}"} \
   ${packageless_file_args[@]+"${packageless_file_args[@]}"} \
-  $(<"${oldwd}/${extra_args_file}") \
-  "${@-}"
+  ${extra_args[@]+"${extra_args[@]}"} \
+  ${@+"${@}"}

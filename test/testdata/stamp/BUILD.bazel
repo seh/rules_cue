@@ -11,6 +11,7 @@ cue_exported_standalone_files(
     inject = {
         "builtat": "{BUILD_TIMESTAMP}",
         "builtby": "{BUILD_USER}",
+        "builtdate": "{FORMATTED_DATE}",
         "message": "Goodbye.",
     },
     stamping_policy = "Force",

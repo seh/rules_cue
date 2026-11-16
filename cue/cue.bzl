@@ -170,7 +170,7 @@ def _add_common_instance_consuming_attrs_to(attrs):
     attrs.update({
         "instance": attr.label(
             doc = """CUE instance to export.
- 
+
 This value must refer either to a target using the cue_instance rule
 or another rule that yields a CUEInstanceInfo provider.""",
             providers = [CUEInstanceInfo],
@@ -247,7 +247,7 @@ def _add_common_output_producing_args_to(ctx, args, stamped_args_file, packagele
             "\n".join([k + "=" + v for k, v in required_stamp_bindings.items()]),
         )
         args = ctx.actions.args()
-        args.add("-prefix", "--inject ")
+        args.add("-preceding-argument", "--inject")
         args.add("-output", stamped_args_file.path)
         args.add(stamp_placeholders_file.path)
         args.add(ctx.info_file.path)  # stable-status.txt
@@ -517,7 +517,7 @@ _cue_instance_runfiles = rule(
     attrs = _add_common_source_consuming_attrs_to({
         "instance": attr.label(
             doc = """CUE instance to export.
- 
+
 This value must refer either to a target using the cue_instance rule
 or another rule that yields a CUEInstanceInfo provider.""",
             providers = [CUEInstanceInfo],

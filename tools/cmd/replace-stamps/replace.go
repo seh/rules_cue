@@ -8,9 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
-	"sync"
 )
 
 const usageExitCode = 2
@@ -25,26 +23,6 @@ func fatalf(code int, format string, args ...interface{}) {
 	os.Exit(code)
 }
 
-var (
-	prohibitedPattern *regexp.Regexp
-	once              sync.Once
-)
-
-// Adapted from https://github.com/alessio/shellescape/blob/v1.4.1/shellescape.go:
-// (Avoid the dependency here.)
-func quoteShellArg(s string) string {
-	if len(s) == 0 {
-		return "''"
-	}
-	once.Do(func() {
-		prohibitedPattern = regexp.MustCompile(`[^\w@%+=:,./-]`)
-	})
-	if prohibitedPattern.MatchString(s) {
-		return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
-	}
-	return s
-}
-
 func readStampBindings(bindingFile string) (b map[string]string, err error) {
 	f, err := os.Open(bindingFile)
 	if err != nil {
@@ -53,7 +31,7 @@ func readStampBindings(bindingFile string) (b map[string]string, err error) {
 		}
 		var pe *os.PathError
 		errors.As(err, &pe)
-		return nil, fmt.Errorf("failed to determine whether binding file %q exists: %w", bindingFile, pe.Err)
+		return nil, fmt.Errorf("determining whether binding file %q exists: %w", bindingFile, pe.Err)
 	}
 	defer func() {
 		if ferr := f.Close(); ferr != nil && err == nil {
@@ -79,12 +57,12 @@ func readStampBindings(bindingFile string) (b map[string]string, err error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed reading binding file: %q: %w", bindingFile, err)
+		return nil, fmt.Errorf("reading binding file %q: %w", bindingFile, err)
 	}
 	return bindings, nil
 }
 
-func replacePlaceholderValues(w io.Writer, r io.Reader, stampBindings map[string]string, prefix string) error {
+func replacePlaceholderValues(w io.Writer, r io.Reader, stampBindings map[string]string, precedingArgument string) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		binding := scanner.Text()
@@ -100,7 +78,14 @@ func replacePlaceholderValues(w io.Writer, r io.Reader, stampBindings map[string
 		default:
 			// Omit replacements for placeholders that match no stamp binding.
 			if replacement, ok := stampBindings[binding[eq+1:]]; ok {
-				fmt.Fprintf(w, "%s%s\n", prefix, quoteShellArg(binding[:eq]+"="+replacement))
+				if len(precedingArgument) > 0 {
+					if _, err := fmt.Fprintln(w, precedingArgument); err != nil {
+						return fmt.Errorf("writing preceding argument %q: %w", precedingArgument, err)
+					}
+				}
+				if _, err := fmt.Fprintf(w, "%s=%s\n", binding[:eq], replacement); err != nil {
+					return fmt.Errorf("writing replacement for placeholder %q: %w", binding[:eq], err)
+				}
 			}
 		}
 
@@ -108,9 +93,9 @@ func replacePlaceholderValues(w io.Writer, r io.Reader, stampBindings map[string
 	return scanner.Err()
 }
 
-func replacePlaceholderValuesIn(placeholderFile string, w io.Writer, stampBindings map[string]string, prefix string) (err error) {
+func replacePlaceholderValuesIn(placeholderFile string, w io.Writer, stampBindings map[string]string, precedingArgument string) (err error) {
 	consume := func(r io.Reader) error {
-		return replacePlaceholderValues(w, r, stampBindings, prefix)
+		return replacePlaceholderValues(w, r, stampBindings, precedingArgument)
 	}
 	if placeholderFile == "-" {
 		return consume(os.Stdin)
@@ -122,7 +107,7 @@ func replacePlaceholderValuesIn(placeholderFile string, w io.Writer, stampBindin
 		}
 		var pe *os.PathError
 		errors.As(err, &pe)
-		return fmt.Errorf("failed to determine whether placeholder file %q exists: %w", placeholderFile, pe.Err)
+		return fmt.Errorf("determining whether placeholder file %q exists: %w", placeholderFile, pe.Err)
 	}
 	defer func() {
 		if ferr := f.Close(); ferr != nil && err == nil {
@@ -133,8 +118,8 @@ func replacePlaceholderValuesIn(placeholderFile string, w io.Writer, stampBindin
 }
 
 func main() {
-	prefix := flag.String("prefix", "",
-		"Prefix to insert before each emitted line of stamped replacements")
+	precedingArgument := flag.String("preceding-argument", "",
+		"`Argument` to emit on its own line before each emitted line of stamped replacements")
 	output := flag.String("output", "",
 		"`File path` to which to write output ('-' means standard output)")
 	flag.Parse()
@@ -142,7 +127,7 @@ func main() {
 
 	switch len(args) {
 	case 0:
-		fatalf(usageExitCode, "%s: at least argument nominating the required replacement file is required.\n", os.Args[0])
+		fatalf(usageExitCode, "%s: at least one argument nominating the replacement file is required.\n", os.Args[0])
 	case 1:
 		return
 	}
@@ -163,7 +148,7 @@ func main() {
 	}
 
 	replace := func(w io.Writer) error {
-		return replacePlaceholderValuesIn(args[0], w, stampBindings, *prefix)
+		return replacePlaceholderValuesIn(args[0], w, stampBindings, *precedingArgument)
 	}
 	if *output == "" || *output == "-" {
 		if err := replace(os.Stdout); err != nil {
