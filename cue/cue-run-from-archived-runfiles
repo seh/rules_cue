@@ -51,6 +51,11 @@ if [ -z "${zipper}" ]; then
   fi
 fi
 
+if [ -z "${RUNFILES_MANIFEST_FILE:-}" ]; then
+  echo >&2 "The \"RUNFILES_MANIFEST_FILE\" environment variable is not set."
+  exit 1
+fi
+
 zip_manifest_file="$(mktemp zip-manifest-XXXXXX)"
 sed -E -e 's/^([^ ]+) /\1=/' "${RUNFILES_MANIFEST_FILE}" > "${zip_manifest_file}"
 runfiles_archive_file="$(mktemp runfiles-archive-XXXXXX)"
@@ -90,7 +95,7 @@ fi
 cd "${cue_src_dir}"
 
 if [ -n "${module_file}" ]; then
-  module_path="$(dirname $(dirname ${module_file}))"
+  module_path="$(dirname "$(dirname "${module_file}")")"
   cd "${module_path}"
 fi
 

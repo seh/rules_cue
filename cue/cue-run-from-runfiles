@@ -61,7 +61,12 @@ while read -r line; do
       packageless_file_args+=("${qualifier}")
       qualifier=
     fi
-    packageless_file_args+=("${oldwd}/$(rlocation ${line})")
+    adjusted_packageless_file="$(rlocation "${line}")"
+    if [ -z "${adjusted_packageless_file}" ]; then
+      echo >&2 "No runfile path available for file path \"${line}\"."
+      exit 1
+    fi
+    packageless_file_args+=("${oldwd}/${adjusted_packageless_file}")
   fi
 done < "${packageless_files_file}"
 if [ -n "${qualifier}" ]; then
@@ -76,12 +81,12 @@ if (( ${#packageless_file_args[@]} == 0 )); then
 fi
 
 if [ -n "${module_file}" ]; then
-  adjusted_module_file="$(rlocation ${module_file})"
+  adjusted_module_file="$(rlocation "${module_file}")"
   if [ -z "${adjusted_module_file}" ]; then
     echo >&2 "No runfile path available for module file path \"${module_file}\"."
     exit 1
   fi
-  module_path="$(dirname $(dirname ${adjusted_module_file}))"
+  module_path="$(dirname "$(dirname "${adjusted_module_file}")")"
   cd "${module_path}"
 fi
 
