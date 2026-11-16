@@ -2,5 +2,6 @@
 /bazel-out
 /bazel-rules_cue
 /bazel-testlogs
+/examples/bzlmod/bazel-*
 
 *~
