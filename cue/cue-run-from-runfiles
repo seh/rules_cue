@@ -13,39 +13,43 @@ module_file=
 package_name=
 
 function parse_args() {
-  while getopts c:i:m:p: name
-  do
+  while getopts c:hi:m:p: name; do
     case "${name}" in
-      c) cue_cache_directory="${OPTARG}";;
-      i) instance_path="${OPTARG}";;
-      h) usage;;
-      m) module_file="${OPTARG}";;
-      p) package_name="${OPTARG}";;
-      ?) usage;;
+    c) cue_cache_directory="${OPTARG}" ;;
+    i) instance_path="${OPTARG}" ;;
+    h) usage ;;
+    m) module_file="${OPTARG}" ;;
+    p) package_name="${OPTARG}" ;;
+    ?) usage ;;
     esac
   done
   if [ -n "${cue_cache_directory}" ] && [ ! -d "${cue_cache_directory}" ]; then
-      printf "%s: specified CUE cache directory \"%s\" does not exist\n" "$(basename "${0}" "${cue_cache_directory}")" 1>&2
-      exit 1
+    printf "%s: specified CUE cache directory \"%s\" does not exist\n" "$(basename "${0}")" "${cue_cache_directory}" 1>&2
+    exit 1
   fi
   if [ -n "${instance_path}" ] && [ -z "${module_file}" ]; then
-      printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
-      exit 1
+    printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
+    exit 1
   fi
   if [ -n "${package_name}" ] && [ -z "${instance_path}" ]; then
-      printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
-      exit 1
+    printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
+    exit 1
   fi
 }
 
 parse_args "${@}"
 shift $((OPTIND - 1))
 
-cue=$1; shift
-subcommand=$1; shift
-extra_args_file=$1; shift
-packageless_files_file=$1; shift
-output_file=$1; shift
+cue=$1
+shift
+subcommand=$1
+shift
+extra_args_file=$1
+shift
+packageless_files_file=$1
+shift
+output_file=$1
+shift
 
 oldwd="${PWD}"
 packageless_file_args=()
@@ -68,7 +72,7 @@ while read -r line; do
     fi
     packageless_file_args+=("${oldwd}/${adjusted_packageless_file}")
   fi
-done < "${packageless_files_file}"
+done <"${packageless_files_file}"
 if [ -n "${qualifier}" ]; then
   echo >&2 "No file path followed qualifier \"${qualifier}\"."
   exit 1
@@ -76,7 +80,7 @@ fi
 
 # NB: If we don't assign to packageless_file_args above in the loop,
 # it winds up being undefined afterward.
-if (( ${#packageless_file_args[@]} == 0 )); then
+if ((${#packageless_file_args[@]} == 0)); then
   packageless_file_args=()
 fi
 
@@ -97,7 +101,7 @@ if [ -n "${cue_cache_directory}" ]; then
   export CUE_CACHE_DIR="${cue_cache_directory}"
 elif [ -z "${HOME:-}" ]; then
   cue_cache_directory="$(mktemp -d -t cue-XXXXXX)"
-  trap "rm -rf '${cue_cache_directory}'" EXIT
+  trap 'rm -rf "${cue_cache_directory}"' EXIT
   export CUE_CACHE_DIR="${cue_cache_directory}"
 fi
 
@@ -108,7 +112,7 @@ fi
 # uncertain of which Bash we'll wind up using, aim to work around as
 # many of their mutually exclusive defects as possible.
 "${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
-  ${instance_path}${package_name:+:${package_name}} \
+  ${instance_path:+"${instance_path}${package_name:+:${package_name}}"} \
   ${packageless_file_args[@]+"${packageless_file_args[@]}"} \
-  $(< "${oldwd}/${extra_args_file}") \
+  $(<"${oldwd}/${extra_args_file}") \
   "${@-}"

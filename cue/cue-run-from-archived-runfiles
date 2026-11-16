@@ -12,34 +12,38 @@ module_file=
 package_name=
 
 function parse_args() {
-  while getopts i:m:p: name
-  do
+  while getopts hi:m:p: name; do
     case "${name}" in
-      i) instance_path="${OPTARG}";;
-      h) usage;;
-      m) module_file="${OPTARG}";;
-      p) package_name="${OPTARG}";;
-      ?) usage;;
+    i) instance_path="${OPTARG}" ;;
+    h) usage ;;
+    m) module_file="${OPTARG}" ;;
+    p) package_name="${OPTARG}" ;;
+    ?) usage ;;
     esac
   done
   if [ -n "${instance_path}" ] && [ -z "${module_file}" ]; then
-      printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
-      exit 1
+    printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
+    exit 1
   fi
   if [ -n "${package_name}" ] && [ -z "${instance_path}" ]; then
-      printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
-      exit 1
+    printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
+    exit 1
   fi
 }
 
 parse_args "${@}"
 shift $((OPTIND - 1))
 
-cue=$1; shift
-subcommand=$1; shift
-extra_args_file=$1; shift
-packageless_files_file=$1; shift
-output_file=$1; shift
+cue=$1
+shift
+subcommand=$1
+shift
+extra_args_file=$1
+shift
+packageless_files_file=$1
+shift
+output_file=$1
+shift
 
 # Try to find an executable file with a Windows-style name first.
 zipper="$(rlocation bazel_tools/tools/zip/zipper/zipper.exe)"
@@ -57,7 +61,7 @@ if [ -z "${RUNFILES_MANIFEST_FILE:-}" ]; then
 fi
 
 zip_manifest_file="$(mktemp zip-manifest-XXXXXX)"
-sed -E -e 's/^([^ ]+) /\1=/' "${RUNFILES_MANIFEST_FILE}" > "${zip_manifest_file}"
+sed -E -e 's/^([^ ]+) /\1=/' "${RUNFILES_MANIFEST_FILE}" >"${zip_manifest_file}"
 runfiles_archive_file="$(mktemp runfiles-archive-XXXXXX)"
 "${zipper}" c "${runfiles_archive_file}" "@${zip_manifest_file}"
 
@@ -80,15 +84,15 @@ while read -r line; do
     fi
     packageless_file_args+=("${oldwd}/${cue_src_dir}/${line}")
   fi
-done < "${packageless_files_file}"
+done <"${packageless_files_file}"
 if [ -n "${qualifier}" ]; then
-  echo >&2 "No file path followed qualifier \"${qualifier}\"." 
+  echo >&2 "No file path followed qualifier \"${qualifier}\"."
   exit 1
 fi
 
 # NB: If we don't assign to packageless_file_args above in the loop,
 # it winds up being undefined afterward.
-if (( ${#packageless_file_args[@]} == 0 )); then
+if ((${#packageless_file_args[@]} == 0)); then
   packageless_file_args=()
 fi
 
@@ -106,7 +110,7 @@ fi
 # uncertain of which Bash we'll wind up using, aim to work around as
 # many of their mutually exclusive defects as possible.
 "${oldwd}/${cue}" "${subcommand}" --outfile "${oldwd}/${output_file}" \
-  ${instance_path}${package_name:+:${package_name}} \
+  ${instance_path:+"${instance_path}${package_name:+:${package_name}}"} \
   ${packageless_file_args[@]+"${packageless_file_args[@]}"} \
-  $(< "${oldwd}/${extra_args_file}") \
+  $(<"${oldwd}/${extra_args_file}") \
   "${@-}"
