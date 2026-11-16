@@ -1,6 +1,7 @@
 module(
     name = "rules_cue",
     version = "0.0.0",
+    bazel_compatibility = [">=8.3.0"],
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
@@ -12,7 +13,7 @@ go_sdk.download(
     version = "1.26.5",
 )
 
-bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "rules_shell", version = "0.10.0")
 
 cue = use_extension("//cue:extensions.bzl", "cue")
 use_repo(

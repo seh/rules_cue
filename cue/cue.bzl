@@ -630,7 +630,7 @@ def _declare_cue_run_binary(name, runfiles_name, tags = []):
             ":{}_lacks_runfiles_directory".format(name): ["@bazel_tools//tools/zip:zipper"],
             "//conditions:default": [],
         }),
-        deps = ["@bazel_tools//tools/bash/runfiles"],
+        use_bash_launcher = True,
         tags = tags,
     )
     return cue_run_name
