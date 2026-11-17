@@ -63,6 +63,11 @@ func readStampBindings(bindingFile string) (b map[string]string, err error) {
 }
 
 func replacePlaceholderValues(w io.Writer, r io.Reader, stampBindings map[string]string, precedingArgument string) error {
+	// argumentTerminator ends each argument written to the output.
+	//
+	// Using the null byte allows an argument to contain any other character, including a newline.
+	const argumentTerminator = "\x00"
+
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		binding := scanner.Text()
@@ -79,11 +84,11 @@ func replacePlaceholderValues(w io.Writer, r io.Reader, stampBindings map[string
 			// Omit replacements for placeholders that match no stamp binding.
 			if replacement, ok := stampBindings[binding[eq+1:]]; ok {
 				if len(precedingArgument) > 0 {
-					if _, err := fmt.Fprintln(w, precedingArgument); err != nil {
+					if _, err := fmt.Fprintf(w, "%s%s", precedingArgument, argumentTerminator); err != nil {
 						return fmt.Errorf("writing preceding argument %q: %w", precedingArgument, err)
 					}
 				}
-				if _, err := fmt.Fprintf(w, "%s=%s\n", binding[:eq], replacement); err != nil {
+				if _, err := fmt.Fprintf(w, "%s=%s%s", binding[:eq], replacement, argumentTerminator); err != nil {
 					return fmt.Errorf("writing replacement for placeholder %q: %w", binding[:eq], err)
 				}
 			}
@@ -119,7 +124,7 @@ func replacePlaceholderValuesIn(placeholderFile string, w io.Writer, stampBindin
 
 func main() {
 	precedingArgument := flag.String("preceding-argument", "",
-		"`Argument` to emit on its own line before each emitted line of stamped replacements")
+		"`Argument` to emit before each emitted stamped replacement")
 	output := flag.String("output", "",
 		"`File path` to which to write output ('-' means standard output)")
 	flag.Parse()

@@ -113,7 +113,7 @@ elif [ -z "${HOME:-}" ]; then
 fi
 
 extra_args=()
-while IFS= read -r arg; do
+while IFS= read -r -d '' arg; do
   extra_args+=("${arg}")
 done <"${oldwd}/${extra_args_file}"
 
