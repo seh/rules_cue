@@ -218,7 +218,7 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "tO9vrcsSEzo1ab06hOjNVsVYAzK4oaouDr4apycYVpo=",
+        "bzlTransitiveDigest": "gt+Evox+aJ9u6CwtxVhyUSek4uwk8X2Wzi4G2mUCj1Q=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
@@ -226,42 +226,48 @@
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
               "arch": "amd64",
-              "os": "darwin"
+              "os": "darwin",
+              "toolchains_repo": "cue_tool_toolchains"
             }
           },
           "cue_tool_darwin_arm64": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
               "arch": "arm64",
-              "os": "darwin"
+              "os": "darwin",
+              "toolchains_repo": "cue_tool_toolchains"
             }
           },
           "cue_tool_linux_amd64": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
               "arch": "amd64",
-              "os": "linux"
+              "os": "linux",
+              "toolchains_repo": "cue_tool_toolchains"
             }
           },
           "cue_tool_linux_arm64": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
               "arch": "arm64",
-              "os": "linux"
+              "os": "linux",
+              "toolchains_repo": "cue_tool_toolchains"
             }
           },
           "cue_tool_windows_amd64": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
               "arch": "amd64",
-              "os": "windows"
+              "os": "windows",
+              "toolchains_repo": "cue_tool_toolchains"
             }
           },
           "cue_tool_windows_arm64": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
             "attributes": {
               "arch": "arm64",
-              "os": "windows"
+              "os": "windows",
+              "toolchains_repo": "cue_tool_toolchains"
             }
           },
           "cue_tool_toolchains": {

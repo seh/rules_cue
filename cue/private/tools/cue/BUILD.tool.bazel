@@ -4,9 +4,15 @@ load(
     "cue_toolchain",
 )
 
+alias(
+    name = "binary",
+    actual = "cue{extension}",
+    visibility = ["@{toolchains_repo}//:__pkg__"],
+)
+
 cue_tool(
     name = "tool",
-    binary = "cue{extension}",
+    binary = ":binary",
     version = "{version}",
 )
 

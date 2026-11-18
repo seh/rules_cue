@@ -1,4 +1,8 @@
 load(
+    "@bazel_skylib//rules:native_binary.bzl",
+    "native_test",
+)
+load(
     "cue_test.bzl",
     "cue_test",
 )
@@ -86,4 +90,10 @@ cue_test(
 cue_test(
     name = "stamp",
     generated_output_file = "//test/testdata/stamp:stamp.json",
+)
+
+native_test(
+    name = "cue_tool_test",
+    src = "//tools/cue",
+    args = ["version"],
 )

@@ -166,6 +166,7 @@ def _download_tool_impl(ctx):
         substitutions = {
             "{containing_package_prefix}": "@{}{}".format(_MODULE_REPOSITORY_NAME, _CONTAINING_PACKAGE_PREFIX),
             "{extension}": ".exe" if os == "windows" else "",
+            "{toolchains_repo}": ctx.attr.toolchains_repo,
             "{version}": version,
         },
     )
@@ -176,6 +177,7 @@ _download_tool = repository_rule(
     attrs = {
         "arch": attr.string(mandatory = True),
         "os": attr.string(mandatory = True),
+        "toolchains_repo": attr.string(mandatory = True),
         "version": attr.string(
             values = _TOOLS_BY_RELEASE.keys(),
             default = _DEFAULT_TOOL_VERSION,
@@ -190,16 +192,39 @@ def declare_bazel_toolchains(version, tool_repo_prefix):
         constraint_setting = "{}:tool_version".format(_CONTAINING_PACKAGE_PREFIX),
     )
     constraint_value_prefix = "@{}//cue/private/tools".format(_MODULE_REPOSITORY_NAME)
+    binary_by_platform = {}
     for platform in _TOOLS_BY_RELEASE[version].keys():
+        platform_name = "{}_{}".format(platform.os, platform.arch)
+        constraint_values = [
+            "{}:cpu_{}".format(constraint_value_prefix, platform.arch),
+            "{}:os_{}".format(constraint_value_prefix, platform.os),
+        ]
+        tool_repo = _tool_repo_name(tool_repo_prefix, platform)
+        native.config_setting(
+            name = platform_name,
+            constraint_values = constraint_values,
+        )
         native.toolchain(
-            name = "{}_{}_{}_toolchain".format(platform.os, platform.arch, version),
-            exec_compatible_with = [
-                "{}:cpu_{}".format(constraint_value_prefix, platform.arch),
-                "{}:os_{}".format(constraint_value_prefix, platform.os),
-            ],
-            toolchain = "@{}//:toolchain".format(_tool_repo_name(tool_repo_prefix, platform)),
+            name = "{}_{}_toolchain".format(platform_name, version),
+            exec_compatible_with = constraint_values,
+            toolchain = "@{}//:toolchain".format(tool_repo),
             toolchain_type = "@{}//tools/cue:toolchain_type".format(_MODULE_REPOSITORY_NAME),
         )
+        binary_by_platform[":" + platform_name] = "@{}//:binary".format(tool_repo)
+    native.alias(
+        name = "cue",
+        actual = select(
+            binary_by_platform,
+            no_match_error = 'No "cue" tool is available for the target platform at version {}'.format(version),
+        ),
+        target_compatible_with = select({
+            condition: []
+            for condition in binary_by_platform.keys()
+        } | {
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        visibility = ["@{}//tools/cue:__pkg__".format(_MODULE_REPOSITORY_NAME)],
+    )
 
 def _toolchains_impl(ctx):
     ctx.template(
@@ -225,15 +250,17 @@ _toolchains_repo = repository_rule(
 )
 
 def download_tool(name, version = None):
+    toolchains_repo_name = name + "_toolchains"
     for platform in _TOOLS_BY_RELEASE[version or _DEFAULT_TOOL_VERSION].keys():
         _download_tool(
             name = _tool_repo_name(name, platform),
             arch = platform.arch,
             os = platform.os,
+            toolchains_repo = toolchains_repo_name,
             version = version,
         )
     _toolchains_repo(
-        name = name + "_toolchains",
+        name = toolchains_repo_name,
         tool_repo_prefix = name,
         version = version,
     )
