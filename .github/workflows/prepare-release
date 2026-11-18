@@ -12,7 +12,7 @@ if [ -z "${ruleset_name}" ]; then
   exit 1
 fi
 
-if (( $# < 1 )); then
+if (($# < 1)); then
   git_tag="${GITHUB_REF_NAME:-}"
 else
   git_tag="$1"
@@ -26,10 +26,10 @@ fi
 # The prefix is chosen to match what GitHub generates for its own
 # source archives.
 git archive \
-    --format=tar \
-    --prefix="${ruleset_name}-${git_tag:1}/" \
-    "${git_tag}" \
-  | gzip > "vcs-archive-${git_tag}.tar.gz"
+  --format=tar \
+  --prefix="${ruleset_name}-${git_tag:1}/" \
+  "${git_tag}" |
+  gzip >"vcs-archive-${git_tag}.tar.gz"
 
 tag_annotation_subject=$(git tag --list --format='%(contents:subject)' "${git_tag}")
 if [ -n "${tag_annotation_subject}" ]; then
@@ -43,12 +43,10 @@ ${tag_annotation_body}
   echo "# Details"
 fi
 
-cat << EOF
-## Using modules with Bazel 6 and later
+cat <<EOF
+## Using this ruleset in a Bazel module
 
-1. Enable support for modules in your _.bazelrc_ file by adding the following line:
-  \`common --enable_bzlmod\`
-1. Add the following directive to your _MODULE.bazel_ file:
+Add the following directive to your _MODULE.bazel_ file:
 \`\`\`starlark
 bazel_dep(name = "${ruleset_name}", version = "${git_tag:1}")
 \`\`\`
