@@ -1,7 +1,7 @@
 load(
     "{containing_package_prefix}:toolchain.bzl",
     "cue_tool",
-    "declare_cue_toolchains",
+    "cue_toolchain",
 )
 
 cue_tool(
@@ -10,6 +10,7 @@ cue_tool(
     version = "{version}",
 )
 
-declare_cue_toolchains(
-    cue_tool = ":tool",
+cue_toolchain(
+    name = "toolchain",
+    tool = ":tool",
 )

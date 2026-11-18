@@ -218,18 +218,56 @@
   "moduleExtensions": {
     "//cue:extensions.bzl%cue": {
       "general": {
-        "bzlTransitiveDigest": "Jd2XDKhHnqER+lUfVd3rW4TeIKQrYvKZ5kQC4E7qXZk=",
+        "bzlTransitiveDigest": "tO9vrcsSEzo1ab06hOjNVsVYAzK4oaouDr4apycYVpo=",
         "usagesDigest": "+lQmNUAhJHUSc7PpyOPTzLUWu369YFAxI3YaNF+ukr4=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
-          "cue_tool": {
+          "cue_tool_darwin_amd64": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
-            "attributes": {}
+            "attributes": {
+              "arch": "amd64",
+              "os": "darwin"
+            }
+          },
+          "cue_tool_darwin_arm64": {
+            "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
+            "attributes": {
+              "arch": "arm64",
+              "os": "darwin"
+            }
+          },
+          "cue_tool_linux_amd64": {
+            "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
+            "attributes": {
+              "arch": "amd64",
+              "os": "linux"
+            }
+          },
+          "cue_tool_linux_arm64": {
+            "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
+            "attributes": {
+              "arch": "arm64",
+              "os": "linux"
+            }
+          },
+          "cue_tool_windows_amd64": {
+            "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
+            "attributes": {
+              "arch": "amd64",
+              "os": "windows"
+            }
+          },
+          "cue_tool_windows_arm64": {
+            "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_download_tool",
+            "attributes": {
+              "arch": "arm64",
+              "os": "windows"
+            }
           },
           "cue_tool_toolchains": {
             "repoRuleId": "@@//cue/private/tools/cue:toolchain.bzl%_toolchains_repo",
             "attributes": {
-              "tool_repo": "cue_tool"
+              "tool_repo_prefix": "cue_tool"
             }
           }
         }
