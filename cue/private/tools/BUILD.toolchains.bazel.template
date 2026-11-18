@@ -1,0 +1,37 @@
+_PLATFORMS = {platforms}
+
+[
+    config_setting(
+        name = name,
+        constraint_values = platform["constraint_values"],
+    )
+    for name, platform in _PLATFORMS.items()
+]
+
+[
+    toolchain(
+        name = "toolchain_" + name,
+        exec_compatible_with = platform["constraint_values"],
+        toolchain = platform["toolchain"],
+        toolchain_type = "{toolchain_type}",
+    )
+    for name, platform in _PLATFORMS.items()
+]
+
+alias(
+    name = "{tool_name}",
+    actual = select(
+        {
+            ":" + name: platform["binary"]
+            for name, platform in _PLATFORMS.items()
+        },
+        no_match_error = 'No "{tool_name}" tool is available for the target platform at version {version}',
+    ),
+    target_compatible_with = select({
+        ":" + name: []
+        for name in _PLATFORMS.keys()
+    } | {
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["{alias_visibility}"],
+)

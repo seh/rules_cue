@@ -7,6 +7,8 @@ load(
     "diff_test",
 )
 
+visibility("private")
+
 def cue_test(
         name,
         generated_output_file,

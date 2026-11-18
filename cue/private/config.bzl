@@ -1,3 +1,5 @@
+visibility("//cue/...")
+
 CUEConfigInfo = provider(
     doc = "CUE-related build configuration summary",
     fields = {

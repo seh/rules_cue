@@ -3,4 +3,6 @@ load(
     _cue = "cue",
 )
 
+visibility("public")
+
 cue = _cue

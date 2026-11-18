@@ -23,7 +23,7 @@ def maximal_selected_version(ctx, tool_name):
             if max_version:
                 if c > max_version[1]:
                     if reached_max_version_limit:
-                        fail("{} version {} requested by module \"{}\" exceeds maximum tolerated version {}".format(tool_name, raw_version, mod.name, max_version[0]))
+                        fail("\"{}\" version {} requested by module \"{}\" exceeds maximum tolerated version {}".format(tool_name, raw_version, mod.name, max_version[0]))
                     max_version = (raw_version, c)
                     reached_max_version_limit = not download.tolerate_newer
                 elif c < max_version[1] and not download.tolerate_newer:
@@ -32,7 +32,7 @@ def maximal_selected_version(ctx, tool_name):
                     # module or any other) could require an even lower
                     # version. We don't bother sorting the full set
                     # ahead of time.
-                    fail("{} version {} exceeds tolerated version {}".format(tool_name, max_version[0], raw_version))
+                    fail("\"{}\" version {} exceeds tolerated version {}".format(tool_name, max_version[0], raw_version))
             else:
                 max_version = (raw_version, c)
                 reached_max_version_limit = not download.tolerate_newer

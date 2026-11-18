@@ -15,6 +15,8 @@ load(
     _runfile_path = "runfile_path",
 )
 
+visibility("public")
+
 CUEModuleInfo = provider(
     doc = "Collects files from cue_module targets for use by referring cue_instance targets.",
     fields = {
@@ -526,7 +528,9 @@ or another rule that yields a CUEInstanceInfo provider.""",
     }),
 )
 
-_cue_toolchain_type = "//tools/cue:toolchain_type"
+# NB: Calling "Label" here works around a defect that Bazel fixed in
+# version 9.3.0, after which the label as a bare string suffices.
+_cue_toolchain_type = Label("//tools/cue:toolchain_type")
 
 # TODO(seh): Consider feeding an argument for the
 # "cue_cache_directory_path" parameter here by way of new rule
@@ -569,6 +573,7 @@ def _make_output_producing_action(ctx, cue_subcommand, mnemonic, description, au
         outputs = [ctx.outputs.result],
         mnemonic = mnemonic,
         progress_message = "Capturing the {} CUE configuration for target \"{}\"".format(description, ctx.label.name),
+        toolchain = _cue_toolchain_type,
     )
 
 def _make_module_based_output_producing_action(ctx, cue_subcommand, mnemonic, description, augment_args = None):

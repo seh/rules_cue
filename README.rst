@@ -10,7 +10,7 @@ CUE rules for Bazel
 .. _the cue tool:
 .. _cue: https://cuelang.org/docs/
 
-Integrate |the cue tool|_ into your Bazel probjects to define data in CUE and export it in various formats.
+Integrate |the cue tool|_ into your Bazel projects to define data in CUE and export it in various formats.
 
 .. contents:: :depth: 2
 

@@ -1,5 +1,5 @@
 load(
-    "//cue/private/tools/cue:toolchain.bzl",
+    "//cue/private/tools/cue:repositories.bzl",
     "download_tool",
     "known_release_versions",
 )
@@ -13,8 +13,7 @@ visibility("//cue")
 
 def _cue_impl(ctx):
     download_tool(
-        name = "cue_tool",
-        version = maximal_selected_version(ctx, "CUE"),
+        version = maximal_selected_version(ctx, "cue"),
     )
 
 cue = module_extension(
