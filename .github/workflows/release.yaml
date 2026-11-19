@@ -56,3 +56,4 @@ jobs:
     uses: ./.github/workflows/publish-to-bcr.yaml
     with:
       tag_name: ${{ needs.release.outputs.released_tag_name }}
+    secrets: inherit
