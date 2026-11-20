@@ -127,7 +127,6 @@ def _toolchains_impl(ctx):
     for platform in _TOOLS_BY_RELEASE[version].keys():
         tool_repo = _tool_repo_name(platform)
         platforms["{}_{}".format(platform.os, platform.arch)] = {
-            "binary": "@{}//:binary".format(tool_repo),
             "constraint_values": [
                 str(Label("//cue/private/tools:cpu_{}".format(platform.arch))),
                 str(Label("//cue/private/tools:os_{}".format(platform.os))),
@@ -141,9 +140,10 @@ def _toolchains_impl(ctx):
         substitutions = {
             "{alias_visibility}": str(Label("//tools/cue:__pkg__")),
             "{platforms}": repr(platforms),
+            "{runtime_toolchain_type}": str(Label("//tools/cue:runtime_toolchain_type")),
             "{tool_name}": "cue",
+            "{toolchain_bzl}": str(Label("//tools/cue:toolchain.bzl")),
             "{toolchain_type}": str(Label("//tools/cue:toolchain_type")),
-            "{version}": version,
         },
     )
 

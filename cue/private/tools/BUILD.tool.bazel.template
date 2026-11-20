@@ -3,15 +3,9 @@ load(
     "{tool_name}_toolchain",
 )
 
-alias(
-    name = "binary",
-    actual = "{tool_name}{extension}",
-    visibility = ["@{toolchains_repo}//:__pkg__"],
-)
-
 {tool_name}_toolchain(
     name = "toolchain",
-    binary = ":binary",
+    binary = "{tool_name}{extension}",
     version = "{version}",
     visibility = ["@{toolchains_repo}//:__pkg__"],
 )

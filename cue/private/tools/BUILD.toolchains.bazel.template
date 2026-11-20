@@ -1,3 +1,8 @@
+load(
+    "{toolchain_bzl}",
+    "{tool_name}_runtime_binary",
+)
+
 _PLATFORMS = {platforms}
 
 [
@@ -18,15 +23,18 @@ _PLATFORMS = {platforms}
     for name, platform in _PLATFORMS.items()
 ]
 
-alias(
+[
+    toolchain(
+        name = "runtime_toolchain_" + name,
+        target_compatible_with = platform["constraint_values"],
+        toolchain = platform["toolchain"],
+        toolchain_type = "{runtime_toolchain_type}",
+    )
+    for name, platform in _PLATFORMS.items()
+]
+
+{tool_name}_runtime_binary(
     name = "{tool_name}",
-    actual = select(
-        {
-            ":" + name: platform["binary"]
-            for name, platform in _PLATFORMS.items()
-        },
-        no_match_error = 'No "{tool_name}" tool is available for the target platform at version {version}',
-    ),
     target_compatible_with = select({
         ":" + name: []
         for name in _PLATFORMS.keys()
