@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
+program_name="${0##*/}"
+
 function usage() {
-  printf "usage: %s [-c cue_cache_directory] [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  printf "usage: %s [-c cue_cache_directory] [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "${program_name}" 1>&2
   exit 2
 }
 
@@ -24,15 +26,15 @@ function parse_args() {
     esac
   done
   if [ -n "${cue_cache_directory}" ] && [ ! -d "${cue_cache_directory}" ]; then
-    printf "%s: specified CUE cache directory \"%s\" does not exist\n" "$(basename "${0}")" "${cue_cache_directory}" 1>&2
+    printf "%s: specified CUE cache directory \"%s\" does not exist\n" "${program_name}" "${cue_cache_directory}" 1>&2
     exit 1
   fi
   if [ -n "${instance_path}" ] && [ -z "${module_file}" ]; then
-    printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
+    printf "%s: specifying a CUE instance path requires specifying a module path\n" "${program_name}" 1>&2
     exit 1
   fi
   if [ -n "${package_name}" ] && [ -z "${instance_path}" ]; then
-    printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
+    printf "%s: specifying a CUE package name requires specifying an instance path\n" "${program_name}" 1>&2
     exit 1
   fi
 }
@@ -111,7 +113,7 @@ if [ -n "${module_file}" ]; then
     echo >&2 "No runfile path available for module file path \"${module_file}\"."
     exit 1
   fi
-  module_path="$(dirname "$(dirname "${adjusted_module_file}")")"
+  module_path="${adjusted_module_file%/*/*}"
   cd "${module_path}"
 fi
 
@@ -121,9 +123,11 @@ fi
 if [ -n "${cue_cache_directory}" ]; then
   export CUE_CACHE_DIR="${cue_cache_directory}"
 elif [ -z "${HOME:-}" ]; then
-  cue_cache_directory="$(mktemp -d -t cue-XXXXXX)"
-  trap 'rm -rf "${cue_cache_directory}"' EXIT
-  export CUE_CACHE_DIR="${cue_cache_directory}"
+  declare -a rand
+  for char in {a..z} {A..Z} {0..9}; do
+    rand[RANDOM]="${char}"
+  done
+  export CUE_CACHE_DIR="${oldwd}/cue-$(printf "%s" "${rand[@]::6}")"
 fi
 
 extra_args=()

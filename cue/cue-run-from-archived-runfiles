@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
+program_name="${0##*/}"
+
 function usage() {
-  printf "usage: %s [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "$(basename "${0}")" 1>&2
+  printf "usage: %s [-i instance_path] [-m module_file] [-p package_name] cue_tool cue_subcommand extra_args_file packageless_files_file output_file [args...]\n" "${program_name}" 1>&2
   exit 2
 }
 
@@ -22,11 +24,11 @@ function parse_args() {
     esac
   done
   if [ -n "${instance_path}" ] && [ -z "${module_file}" ]; then
-    printf "%s: specifying a CUE instance path requires specifying a module path\n" "$(basename "${0}")" 1>&2
+    printf "%s: specifying a CUE instance path requires specifying a module path\n" "${program_name}" 1>&2
     exit 1
   fi
   if [ -n "${package_name}" ] && [ -z "${instance_path}" ]; then
-    printf "%s: specifying a CUE package name requires specifying an instance path\n" "$(basename "${0}")" 1>&2
+    printf "%s: specifying a CUE package name requires specifying an instance path\n" "${program_name}" 1>&2
     exit 1
   fi
 }
@@ -60,12 +62,20 @@ if [ -z "${RUNFILES_MANIFEST_FILE:-}" ]; then
   exit 1
 fi
 
-zip_manifest_file="$(mktemp zip-manifest-XXXXXX)"
-sed -E -e 's/^([^ ]+) /\1=/' "${RUNFILES_MANIFEST_FILE}" >"${zip_manifest_file}"
-runfiles_archive_file="$(mktemp runfiles-archive-XXXXXX)"
+declare -a rand
+for char in {a..z} {A..Z} {0..9}; do
+  rand[RANDOM]="${char}"
+done
+printf -v random_suffix "%s" "${rand[@]::6}"
+
+zip_manifest_file="zip-manifest-${random_suffix}"
+while IFS= read -r line || [ -n "${line}" ]; do
+  printf "%s\n" "${line/ /=}"
+done <"${RUNFILES_MANIFEST_FILE}" >"${zip_manifest_file}"
+runfiles_archive_file="runfiles-archive-${random_suffix}"
 "${zipper}" c "${runfiles_archive_file}" "@${zip_manifest_file}"
 
-cue_src_dir="$(mktemp -d cue-src-XXXXXX)"
+cue_src_dir="cue-src-${random_suffix}"
 "${zipper}" x "${runfiles_archive_file}" -d "${cue_src_dir}"
 
 oldwd="${PWD}"
@@ -99,7 +109,7 @@ fi
 cd "${cue_src_dir}"
 
 if [ -n "${module_file}" ]; then
-  module_path="$(dirname "$(dirname "${module_file}")")"
+  module_path="${module_file%/*/*}"
   cd "${module_path}"
 fi
 
